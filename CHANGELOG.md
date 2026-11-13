@@ -1,3 +1,12 @@
+# 0.5.16
+
+- Starting speed reduced from 48 to 40: 25% above the former base of 32.
+- Replaced the accelerating curve with a steady +0.5 path units/second per round: 40 + 0.5*(round-1).
+- Each dual lane remains exactly half the normal speed for that round. Round 100 base speed is 89.5, or 44.75 per dual lane.
+- Total special-ammo chance remains 3%.
+
+Lua 5.1 tests verify the start speed, exact +0.5 progression and half-speed lanes across all 100 rounds. StyLua passed; unchanged faction layouts reviewed. Use /reload. Saves are preserved; balance needs in-game playtesting.
+
 # 0.5.15
 
 - Starting speed increased from 32 to 48 path units/second (50% faster).

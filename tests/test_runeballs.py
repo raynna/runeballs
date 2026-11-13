@@ -59,7 +59,7 @@ r=E.NewRun(db,1);r.remaining=0;r.paused=false;r.balls={{color=1,d=400},{color=2,
 E.Step(db,0.05);assert(r.balls[1].d==400 and r.balls[2].d>350)
 for i=1,40 do E.Step(db,0.05) end
 assert(r.balls[1].d>400 and math.abs(r.balls[1].d-r.balls[2].d-25)<0.001,'rear pushes front after contact')
-assert(E.Speed(r)==48 and E.Speed({level=5})>50 and E.Speed({level=10})>53,'faster opening and stronger level ramp')
+assert(E.Speed(r)==40 and E.Speed({level=5})==42 and E.Speed({level=10})==44.5,'moderate opening and linear level ramp')
 r=E.NewRun(db,2);r.paused=false;r.remaining=0;r.balls={{color=1,d=E.Path(2).length-0.01}}
 E.Step(db,0.05); assert(r.status=='lost' and not r.paused and r.ending.phase=='drain','defeat starts animated drain')
 local drainCount=#r.balls
@@ -663,8 +663,8 @@ for level=1,100 do
  assert(E.Speed({level=level,dual=true})==speed/2)
  if level>1 then
   local gain=speed-E.Speed({level=level-1})
-  assert(gain>previousGain,'speed gain grows every round');previousGain=gain
+  assert(gain==0.5,'each round adds exactly 0.5');previousGain=gain
  end
 end
-assert(math.abs(E.Speed({level=100})-141.654)<.000001)
+assert(math.abs(E.Speed({level=100})-89.5)<.000001)
 """)
