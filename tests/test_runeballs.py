@@ -59,7 +59,7 @@ r=E.NewRun(db,1);r.remaining=0;r.paused=false;r.balls={{color=1,d=400},{color=2,
 E.Step(db,0.05);assert(r.balls[1].d==400 and r.balls[2].d>350)
 for i=1,40 do E.Step(db,0.05) end
 assert(r.balls[1].d>400 and math.abs(r.balls[1].d-r.balls[2].d-25)<0.001,'rear pushes front after contact')
-assert(E.Speed(r)==32 and E.Speed({level=5})>32 and E.Speed({level=10})<35,'gentle opening ramps into faster later rounds')
+assert(E.Speed(r)==48 and E.Speed({level=5})>50 and E.Speed({level=10})>53,'faster opening and stronger level ramp')
 r=E.NewRun(db,2);r.paused=false;r.remaining=0;r.balls={{color=1,d=E.Path(2).length-0.01}}
 E.Step(db,0.05); assert(r.status=='lost' and not r.paused and r.ending.phase=='drain','defeat starts animated drain')
 local drainCount=#r.balls
@@ -653,4 +653,18 @@ for roll=1,100 do
 end
 math.random=random
 assert(count==3,'exactly 3 of 100 equally likely rolls award any special')
+""")
+
+lua.execute("""
+local E=A.Engine
+local previousGain=0
+for level=1,100 do
+ local speed=E.Speed({level=level})
+ assert(E.Speed({level=level,dual=true})==speed/2)
+ if level>1 then
+  local gain=speed-E.Speed({level=level-1})
+  assert(gain>previousGain,'speed gain grows every round');previousGain=gain
+ end
+end
+assert(math.abs(E.Speed({level=100})-141.654)<.000001)
 """)

@@ -351,7 +351,7 @@ function E.Distance(run, index)
 end
 function E.Speed(run)
     local progress = math.max(0, math.min(100, run.level) - 1)
-    local speed = 32 + progress * 0.22 + progress * progress * 0.0015
+    local speed = 48 + progress * 0.55 + progress * progress * 0.004
     return speed * (run.dual and 0.5 or 1)
 end
 local function pick(run)

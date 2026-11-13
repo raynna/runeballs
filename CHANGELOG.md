@@ -1,3 +1,12 @@
+# 0.5.15
+
+- Starting speed increased from 32 to 48 path units/second (50% faster).
+- Stronger accelerating round curve: 48 + 0.55*(round-1) + 0.004*(round-1)^2. Each round's speed increase is larger than the previous one.
+- Each dual-path lane remains exactly half the equivalent round's normal speed.
+- Examples: round 1 = 48; round 25 = 63.504; round 50 base = 83.354, each lane = 41.677; round 100 base = 141.654, each lane = 70.827.
+
+Lua 5.1 gameplay tests and StyLua passed. Tests cover increasing speed gains and exact half-speed lanes across all 100 rounds. Unchanged faction layouts reviewed. Use /reload; existing runs keep progress and use the new speeds. In-game balance still needs playtesting.
+
 # 0.5.14
 
 - Reduced total special-ammo probability from 7% to 3% per fired shot. A successful roll then chooses Bomb, Frost or Rewind equally: 1% per type overall.
