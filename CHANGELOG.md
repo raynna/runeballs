@@ -1,3 +1,11 @@
+# 0.5.12
+
+- Replaced the fixed special-ammo schedule with an independent 7% chance per fired shot.
+- Bomb, Frost and Rewind are chosen randomly with equal chances. There is no fixed countdown or repeating type order; lucky streaks and dry spells are possible.
+- Includes the new ability-specific particles, trails and reduced-motion effects from 0.5.11.
+
+Lua 5.1 regression tests and StyLua passed, including random-roll boundaries and all three outcomes. Use /reload; current ammunition and saved progress are preserved.
+
 # 0.5.11
 
 - Special ammunition is awarded every 14 shots instead of every 7, halving its frequency while preserving the Bomb/Frost/Rewind rotation.

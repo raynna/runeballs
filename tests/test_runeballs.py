@@ -83,10 +83,17 @@ E.Step(db,0.05);assert(r.balls[#r.balls].d-tail<1,'frost slows rear driver')
 E.Special(r,#r.balls,'Rewind');assert(r.reverse==2.5)
 tail=r.balls[#r.balls].d
 E.Step(db,0.05);assert(r.balls[#r.balls].d<tail,'rewind moves backwards, including behind entrance')
-for i=1,42 do
-    r.shot=nil;r.cooldown=0;assert(E.Fire(r,10,10))
-    if i%14==0 then assert(r.nextKind==({'Bomb','Frost','Rewind'})[i/14]) else assert(not r.nextKind) end
+local random=math.random
+for _,case in ipairs({{roll=7,kind=1,expected='Bomb'},{roll=8},{roll=1,kind=3,expected='Rewind'},{roll=100},{roll=4,kind=2,expected='Frost'}}) do
+ math.random=function(n)
+  if n==100 then return case.roll end
+  if n==3 then return case.kind or 1 end
+  return 1
+ end
+ r.shot=nil;r.cooldown=0;assert(E.Fire(r,10,10))
+ assert(r.nextKind==case.expected,'independent chance and random ability type')
 end
+math.random=random
 r.nextKind='Bomb';r.loadedKind=nil;E.Swap(r);assert(r.loadedKind=='Bomb' and not r.nextKind)
 
 -- Saved v1 run migration preserves score/preferences and gains path distances.
