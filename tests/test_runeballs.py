@@ -583,7 +583,7 @@ local db={};E.Init(db);local r=E.NewRun(db,100)
 r.layoutVersion=nil;r.other.layoutVersion=nil;r.head=9999;r.balls={{color=1,d=9999},{color=2,d=9974}}
 r.score=1234;E.Init(db)
 assert(r.score==1234 and #r.balls==2 and r.balls[1].d-r.balls[2].d==25 and r.paused)
-assert(r.head<=E.Path(100).length-180+0.000001 and r.layoutVersion==2)
+assert(r.head<=E.Path(100).length-180+0.000001 and r.layoutVersion==3)
 """)
 print('PASS: 100 visible route signatures, capped tunnels, exposed exits and saved-layout migration')
 
@@ -778,3 +778,32 @@ math.random=random
 """)
 assert((ADDON/'Media/Rainbow.tga').exists())
 print('PASS: rainbow wildcard colours, mixed-colour rejection, gaps and shared rarity')
+
+# Longer corridors must remain readable, with a visible gap around each exit.
+lua=runtime()
+lua.execute("""
+local E=A.Engine
+for level=1,100 do
+ if not E.IsDualLevel(level) then
+  local path=E.Path(level)
+  assert(path.length>=2500,'single routes offer at least 2500 units of travel')
+  local ex,ey=E.Point(level,path.length)
+  for distance=0,path.length-100,8 do
+   local x,y=E.Point(level,distance)
+   assert((x-ex)^2+((y-ey)*0.86)^2>=39^2,'exit does not overlap earlier road')
+   for other=distance+104,path.length,8 do
+    local ox,oy=E.Point(level,other)
+    assert((x-ox)^2+((y-oy)*0.86)^2>=32^2,'non-crossing corridors retain visible separation')
+   end
+  end
+ end
+end
+local db={best=9876,options={sound=false},run={version=2,pathVersion=1,layoutVersion=2,level=2,head=9999,score=321,remaining=20,balls={{color=2,d=9999,slideAge=0.1},{color=4,d=9974}},shot={x=0,y=0},specialImpact={x=0,y=0}}}
+E.Init(db)
+local r=db.run
+assert(r.layoutVersion==3 and r.paused and r.score==321 and db.best==9876 and db.options.sound==false)
+assert(r.head<=E.Path(2).length-180+0.000001 and r.balls[1].d-r.balls[2].d==25)
+assert(not r.shot and not r.specialImpact and not r.balls[1].slideAge)
+local head=r.head;E.Init(db);assert(r.head==head,'route migration happens only once')
+""")
+print('PASS: longer single routes, separated corridors, portal clearance and v3 layout migration')

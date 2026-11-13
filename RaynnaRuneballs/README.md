@@ -1,11 +1,14 @@
 # Raynna's Runeballs
 
-A standalone coloured-marble shooter for WoW Forever (Interface 16001), version 0.5.23.
+A standalone coloured-marble shooter for WoW Forever (Interface 16001), version 0.5.24.
 Aim an arcane launcher into a winding chain and match three or more marbles
 before its leading ball reaches the void portal. Joining matching groups creates
-chain reactions and score multipliers. Every round has a distinct route: a grove
-spiral, serpentine bends, clover and switchbacks introduce the mechanics, followed
-by generated routes with increasing turns and lobes. The campaign has 100 rounds with a gentler progression. Round one starts with
+chain reactions and score multipliers. The 100-round campaign alternates twelve
+single-path shape families: a circular opening spiral, broad switchbacks, angular
+coils, folded corridors, sweeping bends and winding loops. Later editions change
+orientation and proportions; dual rounds add short covered crossings. Single paths
+have at least 2,500 path units of travel, with round one about 20% longer than in
+0.5.23. Round one starts with
 12 balls in the chain, 54 total marbles and a speed of 40 path pixels/second, increasing by 0.5 each round.
 Six colours are available from round one: red, blue, green, yellow, purple and pearl. Speed and total marble count rise gradually across the campaign.
 
@@ -193,3 +196,13 @@ Matching sections retract more slowly so chain combos are easier to follow.
 Rainbow shares the existing 3% total special rate equally with the other three
 abilities (0.75% per type overall). Its light cycles through the six colours,
 with a steady pearl glow under reduced motion.
+
+Version 0.5.24 replaces the repeated single-path spiral formula with twelve route
+families and visibly distinct editions throughout the campaign. Single paths are
+about 37% longer on average than 0.5.23. Their roads retain at least 32 screen pixels
+of centreline separation outside adjacent bends, clear portals and launcher space.
+Speed and the half-speed dual-lane rule are unchanged. Saved runs retain score,
+marbles and preferences, pause on reload and discard transient effects/projectiles
+from the old geometry. The release includes six individual, labelled offline
+preview PNGs showing both factions, different rounds and special effects; these
+are staged previews, not live WoW screenshots.

@@ -21,10 +21,109 @@ A.runes = { 'I', 'II', 'III', 'IV', 'V' }
 A.realms = { 'The Emerald Grove', 'The Sunken Archive', 'The Violet Sanctum' }
 local spacing = 25
 local paths = {}
--- Early rounds introduce distinct layouts; later rounds gain turns and lobes.
--- Cache only the active round so an endless run cannot accumulate path tables.
-local earlyRoutes = {
-    [2] = {
+-- Alternate distinct route silhouettes, not small variations of one spiral.
+-- The authored corridors leave room for the launcher, portals and neighbouring roads.
+local routeFamilies = {
+    {
+        { 0, 35 },
+        { 720, 35 },
+        { 720, 465 },
+        { 40, 465 },
+        { 40, 105 },
+        { 650, 105 },
+        { 650, 395 },
+        { 110, 395 },
+        { 110, 180 },
+        { 235, 180 },
+    },
+    {
+        { 0, 35 },
+        { 720, 35 },
+        { 720, 105 },
+        { 40, 105 },
+        { 40, 465 },
+        { 720, 465 },
+        { 720, 395 },
+        { 110, 395 },
+        { 110, 185 },
+        { 230, 185 },
+    },
+    {
+        { 0, 250 },
+        { 190, 30 },
+        { 570, 30 },
+        { 730, 250 },
+        { 570, 470 },
+        { 190, 470 },
+        { 65, 250 },
+        { 225, 110 },
+        { 535, 110 },
+        { 640, 250 },
+        { 535, 390 },
+        { 225, 390 },
+        { 155, 250 },
+        { 230, 185 },
+    },
+    {
+        { 0, 30 },
+        { 720, 30 },
+        { 720, 470 },
+        { 40, 470 },
+        { 40, 105 },
+        { 175, 105 },
+        { 175, 390 },
+        { 245, 390 },
+        { 245, 125 },
+        { 515, 125 },
+        { 515, 390 },
+        { 645, 390 },
+        { 645, 120 },
+    },
+    {
+        { 0, 440 },
+        { 160, 440 },
+        { 160, 60 },
+        { 240, 60 },
+        { 240, 125 },
+        { 520, 125 },
+        { 520, 60 },
+        { 600, 60 },
+        { 600, 440 },
+        { 680, 440 },
+        { 680, 20 },
+        { 80, 20 },
+        { 80, 355 },
+    },
+    {
+        { 0, 35 },
+        { 720, 35 },
+        { 720, 465 },
+        { 40, 465 },
+        { 40, 115 },
+        { 180, 115 },
+        { 180, 380 },
+        { 580, 380 },
+        { 580, 115 },
+        { 650, 115 },
+        { 650, 395 },
+    },
+    {
+        { 0, 35 },
+        { 350, 35 },
+        { 350, 85 },
+        { 700, 85 },
+        { 700, 465 },
+        { 40, 465 },
+        { 40, 125 },
+        { 150, 125 },
+        { 150, 395 },
+        { 600, 395 },
+        { 600, 175 },
+        { 525, 175 },
+    },
+}
+local curvedFamilies = {
+    [8] = {
         { 55, 60 },
         { 270, 40 },
         { 620, 50 },
@@ -41,11 +140,11 @@ local earlyRoutes = {
         { 300, 360 },
         { 250, 300 },
     },
-    [3] = {
+    [9] = {
         { 55, 420 },
         { 80, 100 },
         { 240, 50 },
-        { 370, 110 },
+        { 370, 60 },
         { 530, 55 },
         { 700, 120 },
         { 650, 240 },
@@ -59,7 +158,7 @@ local earlyRoutes = {
         { 410, 135 },
         { 530, 190 },
     },
-    [4] = {
+    [10] = {
         { 55, 70 },
         { 660, 70 },
         { 670, 170 },
@@ -74,7 +173,50 @@ local earlyRoutes = {
         { 160, 160 },
         { 150, 250 },
     },
+    [11] = {
+        { 0, 60 },
+        { 220, 30 },
+        { 420, 75 },
+        { 660, 35 },
+        { 720, 200 },
+        { 660, 420 },
+        { 450, 465 },
+        { 200, 420 },
+        { 50, 450 },
+        { 65, 250 },
+        { 150, 140 },
+        { 260, 125 },
+        { 470, 145 },
+        { 570, 230 },
+        { 540, 340 },
+        { 370, 390 },
+        { 230, 320 },
+        { 200, 230 },
+    },
 }
+local function singleControls(level)
+    local family = (level - 2) % 12 + 1
+    if family == 12 then
+        return nil
+    end
+    local edition = math.floor((level - 2) / 12)
+    local mirror = edition % 4
+    local inset = math.floor(edition / 4)
+    local result = {}
+    for i, point in ipairs(routeFamilies[family] or curvedFamilies[family]) do
+        local x = 380 + (point[1] - 380) * (1 - inset * 0.012)
+        local y = 250 + (point[2] - 250) * (1 - inset * 0.008)
+        if mirror % 2 == 1 then
+            x = 760 - x
+        end
+        if mirror >= 2 then
+            y = 500 - y
+        end
+        result[i] = { x, y }
+    end
+    return result
+end
+-- Cache only the active round and its partner.
 function E.Path(level)
     if paths[level] then
         return paths[level]
@@ -99,7 +241,7 @@ function E.Path(level)
         end
         p[#p + 1] = { x = x, y = y, d = p.length }
     end
-    local controls = earlyRoutes[level]
+    local controls = level > 1 and singleControls(level) or nil
     if level >= 1000 or E.IsDualLevel(level) then
         -- A rigid half-turn preserves every segment length exactly. The exits
         -- are on opposite sides of the launcher, not beside one another.
@@ -152,7 +294,29 @@ function E.Path(level)
             end
         end
     end
-    if level >= 1000 or E.IsDualLevel(level) then
+    if controls and curvedFamilies[(level - 2) % 12 + 1] and not E.IsDualLevel(level % 1000) then
+        for segment = 1, #controls - 1 do
+            local a = controls[math.max(1, segment - 1)]
+            local b = controls[segment]
+            local c = controls[segment + 1]
+            local d = controls[math.min(#controls, segment + 2)]
+            for step = 0, 40 do
+                if segment == 1 or step > 0 then
+                    local t = step / 40
+                    local function axis(k)
+                        return 0.5
+                            * (
+                                (2 * b[k])
+                                + (-a[k] + c[k]) * t
+                                + (2 * a[k] - 5 * b[k] + 4 * c[k] - d[k]) * t * t
+                                + (-a[k] + 3 * b[k] - 3 * c[k] + d[k]) * t * t * t
+                            )
+                    end
+                    add(axis(1), axis(2))
+                end
+            end
+        end
+    elseif controls then
         local function lineTo(x, y)
             local last = p[#p]
             local count = math.max(1, math.ceil(math.sqrt((x - last.x) ^ 2 + (y - last.y) ^ 2) / 4))
@@ -168,7 +332,7 @@ function E.Path(level)
             local len = math.sqrt(dx * dx + dy * dy)
             local ex, ey = c[1] - b[1], c[2] - b[2]
             local out = math.sqrt(ex * ex + ey * ey)
-            local radius = math.min(16, len * 0.4, out * 0.4)
+            local radius = math.min(E.IsDualLevel(level % 1000) and 16 or 38, len * 0.4, out * 0.4)
             local px, py = b[1] - dx / len * radius, b[2] - dy / len * radius
             local qx, qy = b[1] + ex / out * radius, b[2] + ey / out * radius
             lineTo(px, py)
@@ -184,45 +348,20 @@ function E.Path(level)
         -- circular inward spiral on screen, rather than an elliptical loop.
         for i = 0, 900 do
             local t = i / 900
-            local radius = 190 - 86 * t
-            local angle = -math.pi * 0.8 + t * math.pi * 3.6
+            local radius = 205 - 100 * t
+            local angle = -math.pi * 0.8 + t * math.pi * 4.3
             add(380 + radius * math.cos(angle), 250 + radius * math.sin(angle) / 0.86)
         end
-    elseif controls then
-        for segment = 1, #controls - 1 do
-            local a = controls[math.max(1, segment - 1)]
-            local b = controls[segment]
-            local c = controls[segment + 1]
-            local d = controls[math.min(#controls, segment + 2)]
-            for step = 0, 30 do
-                if segment == 1 or step > 0 then
-                    local t = step / 30
-                    local function axis(k)
-                        return 0.5
-                            * (
-                                (2 * b[k])
-                                + (-a[k] + c[k]) * t
-                                + (2 * a[k] - 5 * b[k] + 4 * c[k] - d[k]) * t * t
-                                + (-a[k] + 3 * b[k] - 3 * c[k] + d[k]) * t * t * t
-                            )
-                    end
-                    add(axis(1), axis(2))
-                end
-            end
-        end
     else
-        local turns = level == 1 and 1.215 or math.min(2.05, 1.25 + level * 0.009)
-        local phase = level == 1 and -math.pi * 0.8 or level * 0.73
-        local lobes = 2 + math.floor(level / 20)
-        for i = 0, 900 do
-            local t = i / 900
+        -- A broad oval coil is one family, interleaved with eleven different
+        -- corridor shapes. Keep enough separation for the entire road width.
+        local edition = math.floor((level - 2) / 12)
+        local phase = edition * 0.53
+        local turns = 1.95 + math.min(0.15, level * 0.0015)
+        for i = 0, 1200 do
+            local t = i / 1200
             local angle = phase + t * math.pi * 2 * turns
-            local ripple = level == 1 and 0
-                or math.sin(angle * lobes + level) * math.min(18, level * 0.18) * math.sin(t * math.pi)
-            add(
-                380 + (330 - t * 205 + ripple) * math.cos(angle),
-                250 + (210 - t * 120 + ripple * 0.6) * math.sin(angle)
-            )
+            add(380 + (345 - 210 * t) * math.cos(angle), 250 + (225 - 100 * t) * math.sin(angle))
         end
     end
     -- Extend backwards along the entry tangent to the board boundary.
@@ -327,7 +466,7 @@ function E.Init(db)
             r.head = (r.head or 0) + offset
             r.pathVersion = 1
         end
-        if r.layoutVersion ~= 2 and E.IsDualLevel(r.level) then
+        if r.layoutVersion ~= 3 then
             -- Preserve chain spacing/counts on changed maps and leave reaction room.
             local shift = math.max(0, (r.head or 0) - (E.Path(E.Route(r)).length - 180))
             for _, ball in ipairs(r.balls) do
@@ -335,8 +474,12 @@ function E.Init(db)
             end
             r.head = r.balls[1] and r.balls[1].d or 0
             r.shot = nil
+            r.effects, r.burst, r.specialImpact = {}, nil, nil
+            for _, ball in ipairs(r.balls) do
+                ball.slideX, ball.slideY, ball.slideAge = nil, nil, nil
+            end
         end
-        r.layoutVersion = 2
+        r.layoutVersion = 3
         if r.other then
             E.Init({ run = r.other })
         end
@@ -391,7 +534,7 @@ local function newLane(db, level, score)
     local run = {
         version = 2,
         pathVersion = 1,
-        layoutVersion = 2,
+        layoutVersion = 3,
         level = level,
         score = score or 0,
         balls = {},

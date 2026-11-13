@@ -1,3 +1,17 @@
+# 0.5.24
+
+Longer, more varied maps and six individual preview images.
+
+- Replaced the repeated single-lane spiral formula with twelve distinct route families and different editions across the campaign: switchbacks, angular coils, folded corridors, sweeping bends and loops.
+- Opening spiral is about 20% longer; single-path routes average about 37% more travel distance and all exceed 2,500 path units.
+- Kept six colours, special rarity, speed progression and half-speed dual lanes. Retained launcher clearance, border entrances, spaced exits, equal dual lengths and short tunnels.
+- Saved runs migrate without losing score, marbles or preferences; old projectiles/effects are cleared and the run pauses on reload.
+- Six separate full-size PNG previews show both factions, rounds 1, 3, 10, 30, 61 and 100, special balls and activation effects. They are labelled staged offline renders, not live WoW screenshots.
+
+Lua 5.1 gameplay/geometry/migration and flight-game tests passed, StyLua passed, both faction renders and all six previews inspected. Reload WoW after updating. Player saved variables are preserved.
+
+Install RaynnaRuneballs-0.5.24.zip into Interface/AddOns. The six PNG assets are previews, not addon files.
+
 # 0.5.23
 
 - Added a six-colour Rainbow wildcard ball to ammo and incoming chain spawns.
