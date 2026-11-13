@@ -1,3 +1,13 @@
+# 0.5.17
+
+- Specials now retain any of the six ball colours, with 18 matching-colour ability sprites.
+- A special activates only in a touching group of at least three same-colour balls: special plus two others. Special shots insert normally and wait for a match instead of triggering on impact.
+- Incoming chain balls also have an independent 3% total chance of carrying a random Bomb, Frost or Rewind. Ammo retains its 3% total chance.
+- Matching a Bomb clears its matching group and up to three original neighbours ahead and three behind. Orange particles travel both ways along the road. Unmatched specials removed as collateral do not activate.
+- Saved chain abilities persist through reload. Normal balls remain plain.
+
+Lua 5.1 tests cover all 18 variants, no activation with only two matches, unmatched projectile insertion, incoming special spawns, persistence and exact three-neighbour bomb bounds. StyLua and both faction previews checked. Use /reload; restart WoW if newly added textures are not loaded. Not tested inside WoW.
+
 # 0.5.16
 
 - Starting speed reduced from 48 to 40: 25% above the former base of 32.

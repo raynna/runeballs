@@ -151,7 +151,7 @@ local function drawRoad(level)
     end
 end
 local function shotArt(color, kind)
-    return A.media .. (kind or 'Ball' .. color) .. '.tga'
+    return A.media .. (kind and kind .. color or 'Ball' .. color) .. '.tga'
 end
 function A.Draw()
     if not frame then
@@ -172,7 +172,7 @@ function A.Draw()
             visualIndex = visualIndex + 1
             local texture = ball(visualIndex)
             texture:SetParent(lane == r and upperRoad or board)
-            texture:SetTexture(shotArt(b.color))
+            texture:SetTexture(shotArt(b.color, b.kind))
             move(texture, E.Point(E.Route(lane), b.d))
             texture:SetShown(b.d >= 8 and (b.d < 24 or not E.Hidden(lane, b.d)))
             local shrink = 1
@@ -326,7 +326,8 @@ function A.Draw()
         frame.result.action:SetEnabled(not r.ending or r.ending.done)
     end
     frame.special:SetText(
-        r.loadedKind and (r.loadedKind .. ' ready  -  Click to fire') or 'Match 3 or more coloured balls!'
+        r.loadedKind and (r.loadedKind .. ' - Match its colour to activate')
+            or 'Match 3 or more coloured balls!'
     )
     frame.play:SetIcon(r.status == 'playing' and not r.paused and 'PauseIcon' or 'PlayIcon')
     frame.play:SetText(

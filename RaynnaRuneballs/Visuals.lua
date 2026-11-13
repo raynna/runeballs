@@ -180,6 +180,12 @@ function V.Draw(r, active)
                         impact.x + math.cos(angle) * radius,
                         impact.y + math.sin(angle) * radius + gravity
                     )
+                    if impact.kind == 'Bomb' and impact.d then
+                        local direction = i <= 6 and -1 or 1
+                        local distance = impact.d + direction * progress * 90 * (0.5 + (i % 6) / 10)
+                        local x, y = A.Engine.Point(impact.route or A.Engine.Route(state), distance)
+                        move(particle, x + math.cos(angle) * 8, y + math.sin(angle) * 8)
+                    end
                     particle:SetTexture(A.media .. 'SpecialSpark' .. '.tga')
                     particle:SetVertexColor(unpack(color))
                     particle:SetSize(

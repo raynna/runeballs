@@ -379,6 +379,11 @@ local function pick(run)
     end
     return available[math.random(math.max(1, #available))] or 1
 end
+function E.RollSpecial()
+    if math.random(100) <= 3 then
+        return ({ 'Bomb', 'Frost', 'Rewind' })[math.random(3)]
+    end
+end
 local function newLane(db, level, score)
     level = math.max(1, math.min(E.MAX_LEVEL, level or db.level))
     local initial = E.IsDualLevel(level) and (8 + math.floor(level / 25))
@@ -401,7 +406,8 @@ local function newLane(db, level, score)
     }
     db.run = run
     for i = 1, initial do
-        run.balls[i] = { color = math.random(run.colorCount), d = run.head - (i - 1) * spacing }
+        run.balls[i] =
+            { color = math.random(run.colorCount), d = run.head - (i - 1) * spacing, kind = E.RollSpecial() }
         run.remaining = run.remaining - 1
     end
     run.loaded, run.next = pick(run), pick(run)
@@ -451,6 +457,14 @@ local function removeGroup(run, first, last, combo, kind)
     run.score = run.score + count * 100 * combo
     run.head = run.balls[1] and run.balls[1].d or 0
 end
+local triggerSpecial
+local function bombTargets(run, index)
+    local targets = {}
+    for i = math.max(1, index - 3), math.min(#run.balls, index + 3) do
+        targets[run.balls[i]] = true
+    end
+    return targets
+end
 function E.Match(run, index, combo)
     local b = run.balls[index]
     if not b then
@@ -474,13 +488,26 @@ function E.Match(run, index, combo)
     if last - first + 1 < 3 then
         return 0
     end
+    local specials = {}
+    for i = first, last do
+        if run.balls[i].kind then
+            specials[#specials + 1] = {
+                d = run.balls[i].d,
+                kind = run.balls[i].kind,
+                targets = run.balls[i].kind == 'Bomb' and bombTargets(run, i) or nil,
+            }
+        end
+    end
     removeGroup(run, first, last, combo or 1)
+    for _, special in ipairs(specials) do
+        triggerSpecial(run, special.d, special.kind, combo or 1, special.targets)
+    end
     if A.GameSound then
         A.GameSound((combo or 1) > 1 and 'Combo' or 'Match', combo)
     end
     return combo or 1
 end
-function E.Insert(run, index, color, target)
+function E.Insert(run, index, color, target, kind)
     local rear = run.balls[index]
     local front = run.balls[index - 1]
     local d = rear and rear.d + spacing or (front and front.d - spacing or 0)
@@ -488,7 +515,7 @@ function E.Insert(run, index, color, target)
         d = math.max(rear.d + spacing, math.min(front.d - spacing, target))
     end
     local shifted = {}
-    table.insert(run.balls, index, { color = color, d = d })
+    table.insert(run.balls, index, { color = color, d = d, kind = kind })
     for i = index - 1, 1, -1 do
         local ball = run.balls[i]
         local needed = run.balls[i + 1].d + spacing
@@ -508,33 +535,37 @@ function E.Insert(run, index, color, target)
     run.head = run.balls[1] and run.balls[1].d or 0
     return matched
 end
-function E.Special(run, index, kind)
-    local x, y = E.Point(E.Route(run), run.balls[index].d)
-    run.specialImpact = { x = x, y = y, kind = kind, age = 0 }
+triggerSpecial = function(run, d, kind, combo, targets)
+    local x, y = E.Point(E.Route(run), d)
+    run.specialImpact = { x = x, y = y, kind = kind, age = 0, d = d, route = E.Route(run) }
     if A.GameSound then
         A.GameSound(kind)
     end
-    local first, last = index, index
     if kind == 'Bomb' then
-        local d = run.balls[index].d
-        while first > 1 and run.balls[first - 1].d - d <= 70 do
-            first = first - 1
+        local first, last
+        for i, ball in ipairs(run.balls) do
+            if targets and targets[ball] then
+                first = first or i
+                last = i
+            end
         end
-        while run.balls[last + 1] and d - run.balls[last + 1].d <= 70 do
-            last = last + 1
+        -- Collateral clears do not activate unmatched special marbles.
+        if first then
+            removeGroup(run, first, last, combo or 1, 'Explosion')
         end
     elseif kind == 'Frost' then
         run.slow = 4
     elseif kind == 'Rewind' then
         run.reverse = 2.5
     end
-    removeGroup(
-        run,
-        first,
-        last,
-        1,
-        kind == 'Bomb' and 'Explosion' or kind == 'Frost' and 'Shatter' or 'Portal'
-    )
+end
+-- Direct effect helper retained for isolated effect tests; shots always insert.
+function E.Special(run, index, kind)
+    local d = run.balls[index].d
+    if kind ~= 'Bomb' then
+        removeGroup(run, index, index, 1, kind == 'Frost' and 'Shatter' or 'Portal')
+    end
+    triggerSpecial(run, d, kind, 1, kind == 'Bomb' and bombTargets(run, index) or nil)
 end
 local function advanceChain(run, dt)
     local balls = run.balls
@@ -620,10 +651,7 @@ function E.Fire(run, x, y)
     run.loaded, run.next = run.next, pick(run)
     run.loadedKind = run.nextKind
     run.shotsFired = run.shotsFired + 1
-    run.nextKind = nil
-    if math.random(100) <= 3 then
-        run.nextKind = ({ 'Bomb', 'Frost', 'Rewind' })[math.random(3)]
-    end
+    run.nextKind = E.RollSpecial()
     run.cooldown = 0.10
     if A.GameSound then
         A.GameSound('Shoot')
@@ -738,7 +766,7 @@ local function advance(db, dt)
     advanceChain(r, dt)
     while r.remaining > 0 and (#r.balls == 0 or r.balls[#r.balls].d >= spacing) do
         local d = #r.balls == 0 and 0 or r.balls[#r.balls].d - spacing
-        r.balls[#r.balls + 1] = { color = math.random(r.colorCount), d = d }
+        r.balls[#r.balls + 1] = { color = math.random(r.colorCount), d = d, kind = E.RollSpecial() }
         r.remaining = r.remaining - 1
     end
     r.head = r.balls[1] and r.balls[1].d or 0
@@ -800,14 +828,10 @@ local function shoot(r, dt)
                 tx, ty = x + (x - px), y + (y - py)
             end
             local index = ((shot.x - x) * (tx - x) + (shot.y - y) * (ty - y) >= 0) and hit or hit + 1
-            if shot.kind then
-                E.Special(hitLane, hit, shot.kind)
-            else
-                if A.GameSound then
-                    A.GameSound('Hit')
-                end
-                E.Insert(hitLane, index, shot.color, d + (index == hit and spacing or -spacing))
+            if A.GameSound then
+                A.GameSound('Hit')
             end
+            E.Insert(hitLane, index, shot.color, d + (index == hit and spacing or -spacing), shot.kind)
             r.shot = nil
         else
             shot.x, shot.y = shot.x + dx, shot.y + dy

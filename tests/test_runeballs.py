@@ -76,8 +76,8 @@ r.shot={x=759,y=1,vx=1040,vy=0,color=2}
 E.Step(db,0.05);assert(not r.shot)
 r=E.NewRun(db,1);r.paused=false;r.remaining=0
 local before=#r.balls
-E.Special(r,7,'Bomb');assert(#r.balls==before-5 and r.burst.kind=='Explosion')
-E.Special(r,7,'Frost');assert(r.slow==4)
+E.Special(r,7,'Bomb');assert(#r.balls==before-7 and r.burst.kind=='Explosion')
+E.Special(r,math.min(7,#r.balls),'Frost');assert(r.slow==4)
 local tail=r.balls[#r.balls].d
 E.Step(db,0.05);assert(r.balls[#r.balls].d-tail<1,'frost slows rear driver')
 E.Special(r,#r.balls,'Rewind');assert(r.reverse==2.5)
@@ -668,3 +668,36 @@ for level=1,100 do
 end
 assert(math.abs(E.Speed({level=100})-89.5)<.000001)
 """)
+
+lua.execute("""
+local E=A.Engine;local db={};E.Init(db)
+for color=1,6 do
+ for _,kind in ipairs({'Bomb','Frost','Rewind'}) do
+  local r=E.NewRun(db,1);r.remaining=0;r.balls={{color=color,d=300}}
+  E.Insert(r,1,color,325,kind)
+  assert(#r.balls==2 and r.balls[1].kind==kind and not r.specialImpact,'two matching balls cannot activate')
+  E.Insert(r,1,color,350)
+  assert(#r.balls==0 and r.specialImpact.kind==kind,'three matching balls activate any coloured special')
+ end
+end
+local r=E.NewRun(db,1);r.remaining=0;r.balls={}
+for i=1,11 do r.balls[i]={color=i%2+2,d=600-i*25} end
+r.balls[5].color=1;r.balls[6].color=1;r.balls[7].color=1;r.balls[6].kind='Bomb';r.balls[4].kind='Frost'
+assert(E.Match(r,6)==1 and #r.balls==4 and r.score==700)
+assert(r.balls[1].d==575 and r.balls[2].d==550 and r.balls[3].d==350 and r.balls[4].d==325,'bomb clears three original neighbours per side')
+assert(not r.slow or r.slow==0,'unmatched collateral specials do not activate')
+r=E.NewRun(db,1);r.remaining=0;r.paused=false;r.balls={{color=2,d=350}}
+local x,y=E.Point(1,350);r.shot={x=x-35,y=y,vx=1040,vy=0,color=1,kind='Rewind'}
+E.Step(db,.05)
+assert(#r.balls==2 and not r.specialImpact and (r.balls[1].kind=='Rewind' or r.balls[2].kind=='Rewind'),'unmatched special projectile inserts instead of triggering')
+local original=math.random
+math.random=function(n) return n==100 and 3 or 1 end
+r=E.NewRun(db,1);assert(r.balls[1].kind=='Bomb')
+r.balls={};r.remaining=1;r.paused=false;E.Step(db,.01)
+assert(r.balls[1].kind=='Bomb','incoming tunnel ball can carry special')
+local ball=r.balls[1];E.Init(db);assert(r.balls[1]==ball and ball.kind=='Bomb','reload retains coloured chain specials')
+math.random=original
+""")
+for kind in ['Bomb','Frost','Rewind']:
+ for color in range(1,7): assert((ADDON/f'Media/{kind}{color}.tga').exists())
+print('PASS: all 18 coloured specials, match-only activation, incoming specials and three-neighbour bomb blast')
