@@ -42,9 +42,10 @@ def preview(faction,scene):
  for route in routes:
   sx,sy=route[0];tx,ty=route[1];a=math.atan2(ty-sy,tx-sx)
   ex,ey=sx+math.cos(a)*14,sy+math.sin(a)*14
-  sprite('Portal',132+ex,155+ey*.86,60,60,180-math.degrees(math.atan2((ty-sy)*.86,tx-sx)))
+  sprite('Entry',132+ex,155+ey*.86,60,60,-math.degrees(math.atan2((ty-sy)*.86,tx-sx)))
   ex,ey=route[-1];px,py=route[-2];angle=-math.degrees(math.atan2((ey-py)*.86,ex-px))
   sprite('Portal',132+ex,155+ey*.86,60,60,angle)
+  radians=math.radians(-angle);sprite('Track',132+ex-math.cos(radians)*24,155+ey*.86-math.sin(radians)*24,28,30,angle)
  sprite(faction+'Launcher',512,370,104,104);sprite('Ball2',512,370,34,34)
  sprite('Bomb',580,370,28,28);text('NEXT',580,390,14)
  text('ROUND '+str(scene['level']),258,72,25,True,155);text(scene['name'],259,105,14,False,165)

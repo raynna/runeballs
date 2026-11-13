@@ -100,7 +100,7 @@ for level=1,60 do
     assert(path.length>1000)
     local signature=string.format('%.4f:%.4f:%.4f',path.length,path[1].x,path[1].y)
     assert(not seen[signature],'every round has a different route');seen[signature]=true
-    for _,p in ipairs(path) do assert(p.x>=-0.01 and p.x<=760.01 and p.y>=-0.01 and p.y<=500.01,'route stays on board') end
+    for _,p in ipairs(path) do assert(p.x>=-28.01 and p.x<=788.01 and p.y>=-0.01 and p.y<=500.01,'route stays on board') end
 end
 assert(E.Path(12).length>E.Path(1).length)
 -- Unattended runs terminate; simulation keeps all neighbours ordered.
@@ -245,7 +245,7 @@ lua.execute("""
 local E=A.Engine
 for level=1,60 do
  local p=E.Path(level);local x,y=E.Point(level,0)
- assert(math.min(math.abs(x),math.abs(x-760),math.abs(y),math.abs(y-500))<0.01,'edge entrance')
+ assert(math.min(math.abs(x+28),math.abs(x-788),math.abs(y),math.abs(y-500))<0.01,'edge entrance')
 end
 local db={};E.Init(db)
 local r=E.NewRun(db,6);r.paused=false
@@ -303,7 +303,7 @@ E.Step(db,0.01)
 assert(r.shot and #r.other.balls==1,'shot cannot hit a ball in the covered tunnel')
 r=E.NewRun(db,1);r.paused=false;r.remaining=0;r.balls={{color=1,d=14}}
 x,y=E.Point(1,14);r.shot={x=x,y=y,vx=1,vy=1,color=2}
-E.Step(db,0.01);assert(r.shot and #r.balls==1,'entrance roof shields balls too')
+E.Step(db,0.01);assert(#r.balls==1 and r.balls[1].color==1,'edge entrance protects emerging balls')
 """)
 print('PASS: clear perpendicular crossings and long tunnel hit protection')
 
@@ -345,3 +345,18 @@ for level=6,58,4 do
 end
 """)
 print('PASS: compact exit clearance from neighbouring roads on all dual rounds')
+
+lua=runtime()
+lua.execute("""
+local E=A.Engine
+for level=1,60 do
+ for _,route in ipairs((level>=6 and level%4==2) and {level,level+1000} or {level}) do
+  local path=E.Path(route)
+  for d=0,path.length,4 do
+   local x,y=E.Point(route,d)
+   assert((x-380)^2+((y-250)*0.86)^2>99.5^2,'launcher clearance on every route')
+  end
+ end
+end
+""")
+print('PASS: launcher and next-ammo clearance across 60 rounds')

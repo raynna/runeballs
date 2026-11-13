@@ -1,3 +1,18 @@
+# 0.4.4
+
+- Distinct teal stone starting openings built into the actual board borders.
+- Compact circular exit pits with a clean, road-width entry mouth and warm rim.
+- A 100-pixel launcher clearance radius across every route, keeping paths away from the player and next-ammo display.
+- Equal-length mirrored dual routes, two clear crossings, underground arrows and widely separated exits.
+- Includes earlier text-fitting fixes, subtle shoot/hit sounds and the shared flight-game chooser.
+
+Install the ZIP's RaynnaRuneballs folder into Interface/AddOns. Use /reload, then /rrb.
+Character saves are preserved. Tower Defense 0.4.3+ supports the shared chooser.
+
+Validation: Lua 5.1 mock tests over 60 rounds, route length/collision/clearance
+checks, flight chooser tests, StyLua and offline faction previews. Check the
+actual rendering in WoW Forever after reloading.
+
 # 0.4.3
 
 Moves the next-ball indicator beside the launcher so it no longer overlaps a dual-path road. Includes all 0.4.2 improvements: compact edge holes, aligned exits, better road spacing and underground direction arrows.

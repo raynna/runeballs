@@ -70,6 +70,15 @@ function E.Path(level)
     end
     local p = { length = 0 }
     local function add(x, y)
+        -- Keep every route outside the launcher/ammunition clearance circle.
+        local cx, cy = x - 380, (y - 250) * 0.86
+        local radius = math.sqrt(cx * cx + cy * cy)
+        if radius < 100 then
+            if radius < 0.001 then
+                cx, cy, radius = 1, 0, 1
+            end
+            x, y = 380 + cx * 100 / radius, 250 + cy * 100 / radius / 0.86
+        end
         if #p > 0 then
             local prev = p[#p]
             p.length = p.length + math.sqrt((x - prev.x) ^ 2 + (y - prev.y) ^ 2)
@@ -81,9 +90,9 @@ function E.Path(level)
         -- A rigid half-turn preserves every segment length exactly. The exits
         -- are on opposite sides of the launcher, not beside one another.
         local round = level % 1000
-        local top = 170 + math.sin(round * 0.61) * 4
-        local bottom = 400 + math.cos(round * 0.53) * 4
-        controls = { { 0, top }, { 620, top }, { 620, bottom }, { 180, bottom }, { 180, 460 }, { 260, 460 } }
+        local top = 130 + math.sin(round * 0.61) * 4
+        local bottom = 450 + math.cos(round * 0.53) * 4
+        controls = { { 0, top }, { 620, top }, { 620, bottom }, { 90, bottom }, { 90, 400 } }
         if level >= 1000 then
             for _, point in ipairs(controls) do
                 point[1], point[2] = 760 - point[1], 500 - point[2]
@@ -122,7 +131,7 @@ function E.Path(level)
         -- circular inward spiral on screen, rather than an elliptical loop.
         for i = 0, 900 do
             local t = i / 900
-            local radius = 190 - 108 * t
+            local radius = 190 - 86 * t
             local angle = -math.pi * 0.8 + t * math.pi * 3.6
             add(380 + radius * math.cos(angle), 250 + radius * math.sin(angle) / 0.86)
         end
@@ -165,15 +174,15 @@ function E.Path(level)
     end
     -- Extend backwards along the entry tangent to the board boundary.
     local first, second = p[1], p[2]
-    if first.x > 0.1 and first.x < 759.9 and first.y > 0.1 and first.y < 499.9 then
+    if first.x > -27.9 and first.x < 787.9 and first.y > 0.1 and first.y < 499.9 then
         local dx, dy = first.x - second.x, first.y - second.y
         local length = math.sqrt(dx * dx + dy * dy)
         dx, dy = dx / length, dy / length
         local reach = math.huge
         if dx < 0 then
-            reach = math.min(reach, -first.x / dx)
+            reach = math.min(reach, (-28 - first.x) / dx)
         elseif dx > 0 then
-            reach = math.min(reach, (760 - first.x) / dx)
+            reach = math.min(reach, (788 - first.x) / dx)
         end
         if dy < 0 then
             reach = math.min(reach, -first.y / dy)

@@ -118,3 +118,10 @@ print('Built simple covered crossings and round sinkhole.')
 
 # Preserve the source canvas center: rotation pivots at the pit, not its road stub.
 Image.open(src/'ExitMouth.png').convert('RGBA').resize((256,256),Image.Resampling.LANCZOS).save(out/'Portal.tga')
+
+# Compact 0.4.4 entry and exit: crop fixed source coordinates to keep the
+# aperture center on the texture's rotation pivot. Source atlas is 2160x720.
+compact=Image.open(src/'CompactHoles.png').convert('RGBA')
+compact=compact.resize((2160,720),Image.Resampling.LANCZOS)
+compact.crop((90,150,510,570)).resize((128,128),Image.Resampling.LANCZOS).save(out/'Entry.tga')
+compact.crop((1428,0,2148,720)).resize((128,128),Image.Resampling.LANCZOS).save(out/'Portal.tga')

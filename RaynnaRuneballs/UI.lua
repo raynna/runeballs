@@ -125,12 +125,12 @@ local function drawRoad(level)
             t:Show()
         end
         if not entrances[lane] then
-            entrances[lane] = A.Art(entryCovers, 'Portal', 0, 0, 60, 60, 'ARTWORK')
+            entrances[lane] = A.Art(entryCovers, 'Entry', 0, 0, 60, 60, 'ARTWORK')
         end
         local sx, sy = E.Point(route, 14)
         local tx, ty = E.Point(route, 24)
         move(entrances[lane], sx, sy)
-        entrances[lane]:SetRotation(-math.atan2((ty - sy) * YS, tx - sx) + math.pi)
+        entrances[lane]:SetRotation(-math.atan2((ty - sy) * YS, tx - sx))
         entrances[lane]:SetVertexColor(0.8, 0.9, 1, 1)
         entrances[lane]:Show()
     end
@@ -186,6 +186,16 @@ function A.Draw()
     end
     for i = visualIndex + 1, #balls do
         balls[i]:Hide()
+    end
+    for i, lane in ipairs(r.other and { r, r.other } or { r }) do
+        local mouth = i == 1 and board.exitMouth or board.otherMouth
+        local length = E.Path(E.Route(lane)).length
+        move(mouth, E.Point(E.Route(lane), length - 24))
+        mouth:SetRotation(exitAngle(lane))
+        mouth:SetShown(not (r.ending and r.ending.won))
+    end
+    if not r.other then
+        board.otherMouth:Hide()
     end
     board.otherExit:SetShown(r.other ~= nil)
     if r.other then
@@ -520,6 +530,8 @@ function A.BuildUI()
     entryCovers:EnableMouse(false)
     board.exit = A.Art(upperRoad, 'Portal', 0, 0, 60, 60, 'BORDER')
     board.otherExit = A.Art(upperRoad, 'Portal', 0, 0, 60, 60, 'BORDER')
+    board.exitMouth = A.Art(upperRoad, 'Track', 0, 0, 28, 30, 'BORDER')
+    board.otherMouth = A.Art(upperRoad, 'Track', 0, 0, 28, 30, 'BORDER')
     board.launcher = A.Art(board, A.Faction() .. 'Launcher', 380, 250 * YS, 104, 104, 'BORDER')
     for i = 1, 8 do
         aimDots[i] = A.Art(board, 'Dot', 0, 0, 5, 5, 'OVERLAY')

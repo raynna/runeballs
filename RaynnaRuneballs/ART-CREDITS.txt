@@ -27,3 +27,6 @@ and https://github.com/google/fonts/tree/main/ofl/baloo2
 0.4.1 sinkhole: ExitMouth.png, built-in image_gen. Exact prompt in
 ArtSource/ExitMouth-PROMPT.txt. Crossings themselves use native texture
 layering and matching background UVs; no bridge/tunnel prop is used.
+
+0.4.4 entry/exit sprites: CompactHoles.png, generated with built-in image_gen.
+Exact prompt: ArtSource/CompactHoles-PROMPT.txt. Road mouths reuse Track.tga.
