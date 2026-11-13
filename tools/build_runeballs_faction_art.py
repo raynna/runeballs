@@ -42,7 +42,7 @@ for i,name in enumerate(names):
 # at the normal 27px in-game size. Alpha edges remain smoothly antialiased.
 import math
 colors=[(240,35,48),(30,115,250),(45,210,45),(255,200,25),(175,45,245),(224,231,244)]
-for index,base in enumerate(colors,1):
+for index,base in enumerate(colors+[(255,145,20),(25,190,240),(165,65,235)],1):
     ball=Image.new('RGBA',(256,256))
     pixels=ball.load()
     for y in range(256):
@@ -60,7 +60,36 @@ for index,base in enumerate(colors,1):
                 highlight=math.exp(-(((dx+.30)/.31)**2+((dy+.38)/.19)**2)*2)*.88
                 color=tuple(round(c+(255-c)*highlight) for c in color)
             pixels[x,y]=color+(255,)
-    ball.resize((32,32),Image.Resampling.LANCZOS).save(out/('Ball'+str(index)+'.tga'))
+    if index>6:
+        ink=ImageDraw.Draw(ball)
+        white=(255,255,245,255)
+        if index==7:
+            ink.ellipse((75,95,181,201),fill=(18,20,29,255),outline=white,width=9)
+            ink.line([(137,101),(137,77),(163,65),(180,78)],fill=white,width=12)
+            ink.line((180,49,180,91),fill=white,width=8)
+            ink.line((159,70,201,70),fill=white,width=8)
+        elif index==8:
+            for angle in [0,math.pi/3,math.pi*2/3]:
+                dx,dy=math.cos(angle),math.sin(angle)
+                ink.line((128-dx*66,128-dy*66,128+dx*66,128+dy*66),fill=white,width=13)
+                for side in [-1,1]:
+                    cx,cy=128+dx*side*43,128+dy*side*43
+                    for branch in [-1,1]:
+                        ink.line((cx,cy,cx+dx*side*14-dy*branch*18,cy+dy*side*14+dx*branch*18),fill=white,width=9)
+        else:
+            for offset in [0,64]:
+                ink.polygon([(63+offset,128),(116+offset,77),(116+offset,179)],fill=white)
+    name='Ball'+str(index) if index<=6 else ['Bomb','Frost','Rewind'][index-7]
+    ball.resize((32,32),Image.Resampling.LANCZOS).save(out/(name+'.tga'))
+# Clean outlined shockwave and particle sprites, designed for small sizes.
+ring=Image.new('RGBA',(256,256));ink=ImageDraw.Draw(ring)
+ink.ellipse((12,12,244,244),outline=(20,20,30,230),width=24)
+ink.ellipse((18,18,238,238),outline=(255,255,255,255),width=12)
+ring.resize((64,64),Image.Resampling.LANCZOS).save(out/'SpecialRing.tga')
+spark=Image.new('RGBA',(128,128));ink=ImageDraw.Draw(spark)
+ink.polygon([(64,8),(78,49),(120,64),(78,79),(64,120),(49,79),(8,64),(49,49)],fill=(255,255,255,255),outline=(20,20,30,255),width=6)
+spark.resize((32,32),Image.Resampling.LANCZOS).save(out/'SpecialSpark.tga')
+
 # A code-native repeatable road segment: dark groove, bevel and fine gold rails.
 track=Image.new('RGBA',(128,32));d=ImageDraw.Draw(track)
 for y,color in enumerate([(12,11,13,230)]*2+[(126,94,43,255)]*2+[(51,43,37,255)]*2+[(18,20,25,245)]*20+[(51,43,37,255)]*2+[(126,94,43,255)]*2+[(12,11,13,230)]*2):

@@ -633,7 +633,7 @@ end
 function E.Animate(r, dt)
     if r.specialImpact then
         r.specialImpact.age = r.specialImpact.age + dt
-        if r.specialImpact.age >= 0.8 then
+        if r.specialImpact.age >= 1.1 then
             r.specialImpact = nil
         end
     end

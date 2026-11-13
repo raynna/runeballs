@@ -634,7 +634,7 @@ for _,kind in ipairs({'Bomb','Frost','Rewind'}) do
  A.db.options.reducedMotion=true;A.Draw()
  assert(fx.core:IsShown() and not fx.particles[1]:IsShown())
  A.db.options.reducedMotion=false
- E.Animate(r.other,.41);A.Draw();assert(not r.other.specialImpact and not fx.core:IsShown())
+ E.Animate(r.other,.71);A.Draw();assert(not r.other.specialImpact and not fx.core:IsShown())
 end
 local r=A.db.run;E.Special(r,2,'Bomb');A.Draw();A.Close()
 for _,fx in ipairs(A.Visuals.specialBursts) do

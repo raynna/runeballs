@@ -66,7 +66,7 @@ function V.Build(owner, field)
     for lane = 1, 2 do
         local burst = { particles = {} }
         burst.core = A.Art(board.effectLayer, 'Halo', 0, 0, 80, 80, 'OVERLAY')
-        burst.core:SetBlendMode('ADD')
+        burst.core:SetBlendMode('BLEND')
         burst.core:Hide()
         for i = 1, 12 do
             burst.particles[i] = A.Art(board.effectLayer, 'Spark', 0, 0, 12, 12, 'OVERLAY')
@@ -157,16 +157,16 @@ function V.Draw(r, active)
         local impact = state and state.specialImpact
         burst.core:SetShown(impact ~= nil)
         if impact then
-            local progress = math.min(1, impact.age / 0.8)
+            local progress = math.min(1, impact.age / 1.1)
             local reduced = A.MotionReduced()
             local color = specialColors[impact.kind]
             local rewind = impact.kind == 'Rewind'
-            burst.core:SetTexture(A.media .. (rewind and 'PortalSwirl' or 'Halo') .. '.tga')
+            burst.core:SetTexture(A.media .. (rewind and 'PortalSwirl' or 'SpecialRing') .. '.tga')
             burst.core:SetVertexColor(unpack(color))
             move(burst.core, impact.x, impact.y)
             local size = reduced and 55 or rewind and (85 - progress * 45) or (40 + progress * 100)
             burst.core:SetSize(size, size)
-            burst.core:SetAlpha((1 - progress) * 0.65)
+            burst.core:SetAlpha((1 - progress) * 0.95)
             burst.core:SetRotation(not reduced and rewind and -progress * 5 or 0)
             for i, particle in ipairs(burst.particles) do
                 particle:SetShown(not reduced)
@@ -180,13 +180,11 @@ function V.Draw(r, active)
                         impact.x + math.cos(angle) * radius,
                         impact.y + math.sin(angle) * radius + gravity
                     )
-                    particle:SetTexture(
-                        A.media .. (impact.kind == 'Frost' and 'Shatter' or 'Spark') .. '.tga'
-                    )
+                    particle:SetTexture(A.media .. 'SpecialSpark' .. '.tga')
                     particle:SetVertexColor(unpack(color))
                     particle:SetSize(
-                        (impact.kind == 'Frost' and 17 or 12) * (1 - progress * 0.6),
-                        12 * (1 - progress * 0.6)
+                        (impact.kind == 'Frost' and 22 or 18) * (1 - progress * 0.6),
+                        18 * (1 - progress * 0.6)
                     )
                     particle:SetRotation(angle + progress * (rewind and -4 or 2))
                     particle:SetAlpha((1 - progress) * 0.9)
@@ -259,14 +257,17 @@ function V.Draw(r, active)
         muzzle:SetSize(20 + recoil * 90, 20 + recoil * 90)
     end
     local shot = r.shot
-    specialGlow:SetShown(shot and shot.kind ~= nil or false)
-    if shot and shot.kind then
-        move(specialGlow, shot.x, shot.y)
-        specialGlow:SetVertexColor(
-            shot.kind == 'Bomb' and 1 or 0.5,
-            shot.kind == 'Frost' and 0.9 or 0.4,
-            shot.kind == 'Bomb' and 0.15 or 1
-        )
+    local ability = shot and shot.kind or r.loadedKind
+    specialGlow:SetShown(ability ~= nil)
+    if ability then
+        move(specialGlow, shot and shot.kind and shot.x or 380, shot and shot.kind and shot.y or 250)
+        specialGlow:SetTexture(A.media .. 'SpecialRing.tga')
+        specialGlow:SetBlendMode('BLEND')
+        specialGlow:SetVertexColor(unpack(specialColors[ability]))
+        local size = shot and shot.kind and 37 or 44
+        local pulse = moving and math.sin(timer * 5) * 2 or 0
+        specialGlow:SetSize(size + pulse, size + pulse)
+        specialGlow:SetAlpha(0.85)
     end
     for i, t in ipairs(trail) do
         local visible = shot ~= nil and moving

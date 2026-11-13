@@ -1,3 +1,12 @@
+# 0.5.13
+
+- Rebuilt Bomb, Frost and Rewind ammunition with the same smooth small-scale rendering as regular marbles: orange bomb, cyan snowflake and violet rewind arrows.
+- Added a clear ability-coloured outline ring around loaded and flying special ammunition.
+- Impact effects now use outlined shockwaves and larger bright particles instead of faint glow alone; rewind keeps its inward spiral. Effect duration increased from 0.8 to 1.1 seconds.
+- Total special chance remains 7%, with a random type after a successful roll. Reduced-motion and cleanup behavior retained.
+
+Lua 5.1 tests and StyLua passed. Special sprites reviewed at 27px and 34px and both faction previews checked. Actual in-client appearance still needs a playtest. Use /reload; restart the client if old textures remain cached.
+
 # 0.5.12
 
 - Replaced the fixed special-ammo schedule with an independent 7% chance per fired shot.
