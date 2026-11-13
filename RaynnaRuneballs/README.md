@@ -1,13 +1,20 @@
 # Raynna's Runeballs
 
-A standalone coloured-marble shooter for WoW Forever (Interface 16001), version 0.4.5.
+A standalone coloured-marble shooter for WoW Forever (Interface 16001), version 0.5.0.
 Aim an arcane launcher into a winding chain and match three or more marbles
 before its leading ball reaches the void portal. Joining matching groups creates
 chain reactions and score multipliers. Every round has a distinct route: a grove
 spiral, serpentine bends, clover and switchbacks introduce the mechanics, followed
-by generated routes with increasing turns and lobes. Five colours are available
-from round one. Initial chain speed is 26 path pixels/second, rising to 42 by round five
-and 57 by round ten. There are 84 incoming marbles in round one.
+by generated routes with increasing turns and lobes. The campaign has 100 rounds with a gentler progression. Round one starts with
+12 balls in the chain, 54 total marbles and a speed of 18 path pixels/second.
+Three colours introduce the game; a fourth arrives at round 10 and the fifth at
+round 25. Speed and total marble count rise gradually across the campaign.
+
+Rounds 1-29 are single-path. Dual paths appear at rounds 30, 40 and 50, then every
+five rounds from 60 through 100. Each lane runs at 58% of the equivalent single
+lane's speed and starts with a shorter chain. Both paths have exactly equal
+lengths. Clearing round 100 completes the campaign; Play Again restarts round one
+while retaining your personal best.
 
 Alliance and Horde characters automatically receive different illustrated frames,
 launcher bases and buttons. Marbles, controls and effects use simple cartoon
@@ -37,7 +44,7 @@ Runeballs settings. Missing client sound references safely fall back to a UI pin
 - `/rrb` or `/runeballs`: open/close. Minimap left-click also opens the game.
 - Click **Play**, aim with your mouse, and left-click the board to fire.
 - Right-click the board to exchange the loaded and next marble.
-- Match at least three adjacent balls of the same colour. Only special ammunition carries icons. The small ball below the launcher is next.
+- Match at least three adjacent balls of the same colour. Only special ammunition carries icons. The small ball beside the launcher is next.
 - Click **Pause**, close the window, or press Escape to pause. Reopening does
   not resume until Play is clicked. Combat closes and pauses the game.
 - Clear the entire incoming chain to advance. Try again restarts the failed
@@ -136,3 +143,15 @@ extend to the illustrated border; covered entry balls remain protected.
 Version 0.4.5 adds a rotating two-arm portal swirl inside each exit and a soft
 teal pulse inside each entrance during play. Reduced motion uses steady glows.
 Effects use preallocated textures and stop on pause/close.
+
+## Version 0.5.0
+
+The 100-round difficulty curve replaces the previous early dual-path schedule.
+Old saved dual rounds below the new threshold become single-lane runs, preserving
+score and remaining marbles. Runs stay paused after reload.
+
+Balls now fade into view inside the entrance light, above its floor artwork.
+The exit uses a plain round rim with the actual curved track underneath, plus a
+continuous rotating energy spiral. Header values fit the different faction
+plaques; footer icons/text have larger insets. The close control is an icon,
+not a fitted text label.

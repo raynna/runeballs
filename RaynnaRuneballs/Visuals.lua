@@ -51,13 +51,8 @@ function V.Build(owner, field)
         hole.exit = A.Art(portalLayer, 'Halo', 0, 0, 28, 28, 'OVERLAY')
         hole.exit:SetVertexColor(0.65, 0.18, 1)
         hole.exit:SetBlendMode('ADD')
-        hole.swirl = {}
-        for n = 1, 16 do
-            local dot = A.Art(portalLayer, 'Dot', 0, 0, 3, 3, 'OVERLAY')
-            dot:SetVertexColor(0.8, 0.45, 1)
-            dot:SetBlendMode('ADD')
-            hole.swirl[n] = dot
-        end
+        hole.swirl = { A.Art(portalLayer, 'PortalSwirl', 0, 0, 28, 28, 'OVERLAY') }
+        hole.swirl[1]:SetBlendMode('ADD')
         V.holes[i] = hole
     end
     for i = 1, 16 do
@@ -152,16 +147,11 @@ function V.Draw(r, active)
             move(hole.exit, x, y)
             hole.exit:SetAlpha(animated and (0.6 + math.sin(timer * 1.7) * 0.12) or 0.55)
             local draining = r.ending and r.ending.phase == 'drain'
-            for n, dot in ipairs(hole.swirl) do
-                dot:SetShown(animated and not sealed)
-                if animated and not sealed then
-                    local fraction = ((n - 1) % 8) / 7
-                    local angle = timer * (draining and 4 or 1.2) + fraction * 4 + (n > 8 and math.pi or 0)
-                    local radius = 2 + fraction * 10
-                    move(dot, x + math.cos(angle) * radius, y + math.sin(angle) * radius / 0.86)
-                    dot:SetAlpha(0.35 + fraction * 0.45)
-                end
-            end
+            local swirl = hole.swirl[1]
+            swirl:SetShown(animated and not sealed)
+            move(swirl, x, y)
+            swirl:SetRotation(-timer * (draining and 3.5 or 0.8))
+            swirl:SetAlpha(0.95)
         else
             for _, dot in ipairs(hole.swirl) do
                 dot:Hide()
@@ -170,7 +160,11 @@ function V.Draw(r, active)
     end
     for i, spark in ipairs(holeSparks) do
         local lane = i <= 8 and r or r.other
-        local visible = lane and not r.paused and not A.MotionReduced() and not (r.ending and r.ending.won)
+        local visible = lane
+            and not r.paused
+            and not A.MotionReduced()
+            and r.ending
+            and r.ending.phase == 'drain'
         spark:SetShown(not not visible)
         if visible then
             local x, y = A.Engine.Point(A.Engine.Route(lane), A.Engine.Path(A.Engine.Route(lane)).length)

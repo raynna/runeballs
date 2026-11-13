@@ -14,7 +14,7 @@ def runtime():
             local f=create(...)
             f.SetBackdrop=function(self,data) self.backdrop=data end
             f.CreateTexture=function(self,name,layer)
-                local t=create('Texture',name,self);t.drawLayer=layer;return t
+                local t=create('Texture',name,self);t.drawLayer=layer;t.SetAlpha=function(self,v) self.alpha=v end;return t
             end
             return f
         end
@@ -32,7 +32,7 @@ local db={options={scale=1.1,autoFlight=false},best=40}
 E.Init(db)
 assert(db.options.scale==1.1 and not db.options.autoFlight and db.best==40)
 local r=E.NewRun(db)
-assert(r.paused and #r.balls==22 and r.remaining==62)
+assert(r.paused and #r.balls==12 and r.remaining==42)
 local head=r.head
 E.Step(db,0.05); assert(r.head==head,'paused simulation is stationary')
 r.paused=false
@@ -56,9 +56,9 @@ assert(r.status=='won' and r.score==900 and db.level==2 and db.best==900,'contac
 -- Unmatched leading section waits; rear catches it and supplies forward motion.
 r=E.NewRun(db,1);r.remaining=0;r.paused=false;r.balls={{color=1,d=400},{color=2,d=350}}
 E.Step(db,0.05);assert(r.balls[1].d==400 and r.balls[2].d>350)
-for i=1,24 do E.Step(db,0.05) end
+for i=1,40 do E.Step(db,0.05) end
 assert(r.balls[1].d>400 and math.abs(r.balls[1].d-r.balls[2].d-25)<0.001,'rear pushes front after contact')
-assert(E.Speed(r)==26 and E.Speed({level=5})==42 and E.Speed({level=10})==57,'gentle opening ramps into faster later rounds')
+assert(E.Speed(r)==18 and E.Speed({level=5})>18 and E.Speed({level=10})<21,'gentle opening ramps into faster later rounds')
 r=E.NewRun(db,2);r.paused=false;r.remaining=0;r.balls={{color=1,d=E.Path(2).length-0.01}}
 E.Step(db,0.05); assert(r.status=='lost' and not r.paused and r.ending.phase=='drain','defeat starts animated drain')
 local drainCount=#r.balls
@@ -79,7 +79,7 @@ E.Special(r,7,'Bomb');assert(#r.balls==before-5 and r.burst.kind=='Explosion')
 E.Special(r,7,'Frost');assert(r.slow==4)
 local tail=r.balls[#r.balls].d
 E.Step(db,0.05);assert(r.balls[#r.balls].d-tail<1,'frost slows rear driver')
-E.Special(r,7,'Rewind');assert(r.reverse==2.5)
+E.Special(r,#r.balls,'Rewind');assert(r.reverse==2.5)
 tail=r.balls[#r.balls].d
 E.Step(db,0.05);assert(r.balls[#r.balls].d<tail,'rewind moves backwards, including behind entrance')
 for i=1,21 do
@@ -95,18 +95,18 @@ local position=old.run.balls[2].d;E.Init(old);assert(old.run.balls[2].d==positio
 
 -- Distinct routes, bounded geometry and increasing complexity.
 local seen={}
-for level=1,60 do
+for level=1,100 do
     local path=E.Path(level)
     assert(path.length>1000)
     local signature=string.format('%.4f:%.4f:%.4f',path.length,path[1].x,path[1].y)
     assert(not seen[signature],'every round has a different route');seen[signature]=true
     for _,p in ipairs(path) do assert(p.x>=-28.01 and p.x<=788.01 and p.y>=-0.01 and p.y<=500.01,'route stays on board') end
 end
-assert(E.Path(12).length>E.Path(1).length)
+assert(E.Path(99).length>E.Path(1).length)
 -- Unattended runs terminate; simulation keeps all neighbours ordered.
 for level=1,8 do
     r=E.NewRun(db,level);r.paused=false
-    for step=1,3000 do
+    for step=1,6000 do
         E.Step(db,0.05)
         for i=2,#r.balls do assert(r.balls[i-1].d-r.balls[i].d>=24.99) end
         if r.status~='playing' then break end
@@ -236,32 +236,32 @@ for first in ('runeballs', 'towerdefense'):
         check.execute((ADDON / 'SettingsRegistry.lua').read_text())
         check.execute('RaynnaModsSettingsRegistry:Register(..., ..., function() return function() end end)', name, name)
     check.execute("assert(COUNT==1 and RaynnaModsSettingsRegistry.pages.runeballs and RaynnaModsSettingsRegistry.pages.towerdefense)")
-print('PASS: Lua 5.1 gap physics, combos, specials, 60 unique routes, migration, faction UI, native sound/mute/fallback, settings and flight lifecycle')
+print('PASS: Lua 5.1 gap physics, combos, specials, 100 unique routes, migration, faction UI, native sound/mute/fallback, settings and flight lifecycle')
 
 
 # Edge entrances, paired lanes, bridges and dual-round end states.
 lua=runtime()
 lua.execute("""
 local E=A.Engine
-for level=1,60 do
+for level=1,100 do
  local p=E.Path(level);local x,y=E.Point(level,0)
  assert(math.min(math.abs(x+28),math.abs(x-788),math.abs(y),math.abs(y-500))<0.01,'edge entrance')
 end
 local db={};E.Init(db)
-local r=E.NewRun(db,6);r.paused=false
-assert(r.other and #E.Crossings(6)>0 and E.Remaining(r)>44)
+local r=E.NewRun(db,30);r.paused=false
+assert(r.other and #E.Crossings(30)>0 and E.Remaining(r)>44)
 local h,h2=r.head,r.other.head
 E.Step(db,0.05);assert(r.head>h and r.other.head>h2,'simultaneous chains')
-local cross=E.Crossings(6)[1]
+local cross=E.Crossings(30)[1]
 assert(E.Hidden(r.other,cross.under) and not E.Hidden(r,cross.over),'bridge occludes lower lane only')
 r.balls={};r.remaining=0
 E.Step(db,0.05);assert(r.cleared and r.status=='playing','one clear lane is not a win')
 r.other.balls={};r.other.remaining=0
-E.Step(db,0.05);assert(r.status=='won' and db.level==7)
+E.Step(db,0.05);assert(r.status=='won' and db.level==31)
 for i=1,80 do E.Step(db,0.05) end
 assert(r.ending.done)
 for _,secondary in ipairs({false,true}) do
- r=E.NewRun(db,6);r.paused=false
+ r=E.NewRun(db,30);r.paused=false
  local lane=secondary and r.other or r
  lane.balls={{color=1,d=E.Path(E.Route(lane)).length-0.01}};lane.remaining=0
  E.Step(db,0.05);assert(r.status=='lost' and r.other.status=='lost')
@@ -278,7 +278,7 @@ print('PASS: edge entrances, dual chains, bridges, both loss lanes, win and paus
 lua=runtime()
 lua.execute("""
 local E=A.Engine
-for level=6,58,4 do
+for _,level in ipairs({30,40,50,60,65,70,75,80,85,90,95,100}) do
  local a,b=E.Path(level),E.Path(level+1000)
  assert(math.abs(a.length-b.length)<0.00001,'identical lane lengths')
  local ax,ay=E.Point(level,a.length);local bx,by=E.Point(level+1000,b.length)
@@ -293,8 +293,8 @@ for level=6,58,4 do
  end
 end
 local db={};E.Init(db)
-local r=E.NewRun(db,6);r.paused=false
-local c=E.Crossings(6)[1]
+local r=E.NewRun(db,30);r.paused=false
+local c=E.Crossings(30)[1]
 r.balls={{color=1,d=200}};r.remaining=0
 r.other.balls={{color=2,d=c.under}};r.other.remaining=0
 local x,y=E.Point(E.Route(r.other),c.under)
@@ -330,7 +330,7 @@ print('PASS: single-layer scores, bounded text fitting and subtle native hit sou
 lua=runtime()
 lua.execute("""
 local E=A.Engine
-for level=6,58,4 do
+for _,level in ipairs({30,40,50,60,65,70,75,80,85,90,95,100}) do
  for _,route in ipairs({level,level+1000}) do
   local path=E.Path(route)
   local x,y=E.Point(route,path.length)
@@ -349,8 +349,8 @@ print('PASS: compact exit clearance from neighbouring roads on all dual rounds')
 lua=runtime()
 lua.execute("""
 local E=A.Engine
-for level=1,60 do
- for _,route in ipairs((level>=6 and level%4==2) and {level,level+1000} or {level}) do
+for level=1,100 do
+ for _,route in ipairs(E.IsDualLevel(level) and {level,level+1000} or {level}) do
   local path=E.Path(route)
   for d=0,path.length,4 do
    local x,y=E.Point(route,d)
@@ -359,13 +359,13 @@ for level=1,60 do
  end
 end
 """)
-print('PASS: launcher and next-ammo clearance across 60 rounds')
+print('PASS: launcher and next-ammo clearance across 100 rounds')
 
 lua=runtime()
 lua.execute("""
 A.events.OnEvent(A.events,'ADDON_LOADED','RaynnaRuneballs')
 A.events.OnEvent(A.events,'PLAYER_LOGIN')
-local r=A.Engine.NewRun(A.db,6);r.paused=false
+local r=A.Engine.NewRun(A.db,30);r.paused=false
 A.Open(false);r.paused=false
 local hole=A.Visuals.holes[1]
 hole.entry.SetAlpha=function(self,value) self.alphaValue=value end
@@ -378,3 +378,49 @@ assert(hole.entry:IsShown() and hole.exit:IsShown() and not hole.swirl[1]:IsShow
 A.Close();assert(not hole.entry:IsShown() and not hole.exit:IsShown())
 """)
 print('PASS: animated portal interior, entrance pulse, reduced motion and close cleanup')
+
+
+lua=runtime()
+lua.execute("""
+local E=A.Engine
+local db={};E.Init(db)
+local previous=0
+for level=1,100 do
+ local r=E.NewRun(db,level)
+ assert((r.other~=nil)==E.IsDualLevel(level))
+ if level<30 then assert(not r.other) end
+ local base=E.Speed({level=level});assert(base>previous);previous=base
+ if r.other then assert(E.Speed(r)<base*0.6 and #r.balls<=12) end
+ assert(E.Remaining(r)==E.MarbleCount(level))
+end
+local r=E.NewRun(db,100);r.paused=false;r.balls={};r.remaining=0;r.other.balls={};r.other.remaining=0
+E.Step(db,0.05);assert(r.status=='won' and r.campaignComplete and db.level==100)
+assert(E.NewRun(db,101).level==100)
+-- Earlier saved dual rounds become a manageable single lane without losing score or marbles.
+r=E.NewRun(db,30);r.level=6;r.other.level=6;r.score=500;r.other.score=100
+local count=E.Remaining(r)
+E.Init(db);assert(not r.other and not r.dual and r.score==600 and E.Remaining(r)==count and r.paused)
+A.events.OnEvent(A.events,'ADDON_LOADED','RaynnaRuneballs')
+A.events.OnEvent(A.events,'PLAYER_LOGIN')
+r=E.NewRun(A.db,1);r.balls={{color=1,d=14}};r.head=14;r.remaining=1
+A.Draw()
+local entry,emerging
+for _,f in ipairs(Frames) do
+ if rawget(f,'texture')==A.media..'Entry.tga' and f:IsShown() then entry=f end
+ if rawget(f,'texture')==A.media..'Ball1.tga' and f:IsShown() and f.alpha==0.5 then emerging=f end
+end
+assert(entry and emerging and entry.parent==emerging.parent)
+assert(entry.drawLayer=='BORDER' and emerging.drawLayer=='ARTWORK','marble emerges visibly inside entrance light')
+assert(A.frame.closeButton:GetScript('OnClick')==A.Close and A.frame.closeButton:GetWidth()==30)
+""")
+print('PASS: 100-level progression, delayed dual lanes, campaign ending, save migration, entrance reveal and icon close button')
+
+lua.execute("""
+local r=A.Engine.NewRun(A.db,100);r.paused=false
+r.balls={};r.remaining=0;r.other.balls={};r.other.remaining=0
+for i=1,100 do A.Engine.Step(A.db,0.05) end
+A.Draw()
+assert(A.frame.result.action.label:GetText()=='PLAY AGAIN')
+A.frame.result.action.OnClick()
+assert(A.db.run.level==1 and A.db.run.score==0,'campaign replay never creates level 101')
+""")

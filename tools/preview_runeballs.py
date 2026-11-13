@@ -27,43 +27,46 @@ def preview(faction,scene):
   path=[(132+x,155+y*.86) for x,y in route]
   for width,color in [(31,(9,10,14)),(28,(139,102,45)),(25,(37,34,35)),(22,(17,20,26))]:d.line(path,fill=color,width=width,joint='curve')
  def marbles(points):
-  for x,y in points:sprite('Ball'+str(rng.randrange(1,6)),132+x,155+y*.86,27,27)
+  for x,y in points:sprite('Ball'+str(rng.randrange(1,scene['colors']+1)),132+x,155+y*.86,27,27)
  def coverbox(left,top,right,bottom):
   box=tuple(round(v) for v in (left,top,right,bottom))
   im.paste(background.crop(box),box)
+ def entrance(route):
+  sx,sy=route[0];tx,ty=route[1];a=math.atan2(ty-sy,tx-sx)
+  ex,ey=sx+math.cos(a)*14,sy+math.sin(a)*14
+  sprite('Entry',132+ex,155+ey*.86,60,60,-math.degrees(math.atan2((ty-sy)*.86,tx-sx)))
  if 'other' in scene:
-  road(scene['other']);marbles(scene.get('otherMarbles',[]))
+  road(scene['other']);entrance(scene['other']);marbles(scene.get('otherMarbles',[]))
   for c in scene['crossings']:
    x,y,w,h=c['bounds'];coverbox(132+x,155+y,132+x+w,155+y+h)
    for gx,gy,angle in c['guide']:
     for side in [-1,1]:
      wing=angle+side*.65;d.line((132+gx-6*math.cos(wing),155+gy*.86-6*math.sin(wing),132+gx,155+gy*.86),fill=(145,122,83),width=2)
- road(scene['path']);marbles(scene['marbles'])
+ road(scene['path']);entrance(scene['path']);marbles(scene['marbles'])
  for route in routes:
-  sx,sy=route[0];tx,ty=route[1];a=math.atan2(ty-sy,tx-sx)
-  ex,ey=sx+math.cos(a)*14,sy+math.sin(a)*14
-  sprite('Entry',132+ex,155+ey*.86,60,60,-math.degrees(math.atan2((ty-sy)*.86,tx-sx)))
   ex,ey=route[-1];px,py=route[-2];angle=-math.degrees(math.atan2((ey-py)*.86,ex-px))
   sprite('Portal',132+ex,155+ey*.86,60,60,angle)
-  radians=math.radians(-angle);sprite('Track',132+ex-math.cos(radians)*24,155+ey*.86-math.sin(radians)*24,28,30,angle)
+  sprite('PortalSwirl',132+ex,155+ey*.86,28,28)
  sprite(faction+'Launcher',512,370,104,104);sprite('Ball2',512,370,34,34)
  sprite('Bomb',580,370,28,28);text('NEXT',580,390,14)
  text('ROUND '+str(scene['level']),258,72,25,True,155);text(scene['name'],259,105,14,False,165)
- for x,label,value in [(744,'SCORE','9,200'),(873,'BEST','32,200')]:
-  text(label,x,72,16);text(value,x,96,28,True,119)
- sprite('Trophy',706,82,22,22);sprite('Crown',835,82,22,22)
+ width=84 if faction=='Alliance' else 109
+ for left,label,value,icon in [(690 if faction=='Alliance' else 689,'SCORE','9,200','Trophy'),(784 if faction=='Alliance' else 818,'BEST','32,200','Crown')]:
+  center=left+width/2
+  sprite(icon,center-30,82,14,14);text(label,center+12,76,12);text(value,center,98,24,True,width)
  panel(132,590,760,27);text('PORTAL THREAT',207,596,14)
  d.rectangle((292,598,877,609),fill=(13,8,15));d.rectangle((292,598,540,609),fill=(39,191,255))
- panel(35,625,290,83);sprite('QuestGem',68,666,47,55)
- text('SEAL THE PORTAL!',203,635,22,False,213);text('Match 3+ to clear the chain',203,664,15,False,213)
- panel(335,625,110,83);sprite('Marbles',355,646,24,24);text('MARBLES',402,635,14);text('74',390,658,38,True)
+ panel(35,625,290,83);sprite('QuestGem',66,666,38,48)
+ text('SEAL THE PORTAL!',203,641,18,False,213);text('Match 3+ to clear the chain',203,670,14,False,213)
+ panel(335,625,110,83);sprite('Marbles',355,647,16,16);text('MARBLES',400,641,11);text('74',390,665,28,True)
  panel(455,625,220,83)
- for i,(icon,label) in enumerate([('MouseLeft','Left mouse - Shoot'),('MouseRight','Right mouse - Swap'),('EscapeKey','Esc - Pause')]):
-  sprite(icon,478,641+i*24,24,22);text(label,577,631+i*24,15,False,175)
+ for i,(icon,label) in enumerate([('MouseLeft','Left-click: shoot'),('MouseRight','Right-click: swap'),('EscapeKey','Esc: pause')]):
+  sprite(icon,479,646+i*21,16,18);text(label,577,641+i*21,13,False,156)
  for x,w,label,icon in [(685,145,'PAUSE','PauseIcon'),(840,150,'SETTINGS','SettingsIcon')]:
-  sprite(faction+'Button',x+w/2,665, w,57);sprite(icon,x+25,665,25,25);text(label,x+w*.61,657,16,False,w-54)
+  sprite(faction+'Button',x+w/2,665, w,57);sprite(icon,x+32,665,16,16);text(label,x+44+(w-64)/2,658,14,False,w-64)
+ sprite('CloseIcon',994,27,30,30)
  return im
 (ROOT/'dist').mkdir(exist_ok=True)
-for faction,level in [('Alliance',1),('Horde',6)]:
+for faction,level in [('Alliance',1),('Horde',30)]:
  preview(faction,scenes[level-1]).convert('RGB').save(ROOT/'dist'/('RaynnaRuneballs-'+faction+'-preview.png'))
 print('Rendered 1024x720 Alliance spiral and Horde dual-path layout previews.')

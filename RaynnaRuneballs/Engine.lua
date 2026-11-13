@@ -1,6 +1,13 @@
 local _, A = ...
 local E = {}
 A.Engine = E
+E.MAX_LEVEL = 100
+function E.IsDualLevel(level)
+    return level >= 30 and level <= 100 and (level % 10 == 0 or (level >= 60 and level % 5 == 0))
+end
+function E.MarbleCount(level)
+    return 54 + math.floor((math.min(level, 100) - 1) * 1.4)
+end
 A.media = 'Interface\\AddOns\\RaynnaRuneballs\\Media\\'
 A.colors = { { 1, 0.19, 0.15 }, { 0.15, 0.65, 1 }, { 0.28, 0.9, 0.22 }, { 1, 0.8, 0.12 }, { 0.8, 0.28, 1 } }
 A.runes = { 'I', 'II', 'III', 'IV', 'V' }
@@ -86,7 +93,7 @@ function E.Path(level)
         p[#p + 1] = { x = x, y = y, d = p.length }
     end
     local controls = earlyRoutes[level]
-    if level >= 1000 or (level >= 6 and level % 4 == 2) then
+    if level >= 1000 or E.IsDualLevel(level) then
         -- A rigid half-turn preserves every segment length exactly. The exits
         -- are on opposite sides of the launcher, not beside one another.
         local round = level % 1000
@@ -99,7 +106,7 @@ function E.Path(level)
             end
         end
     end
-    if level >= 1000 or (level >= 6 and level % 4 == 2) then
+    if level >= 1000 or E.IsDualLevel(level) then
         local function lineTo(x, y)
             local last = p[#p]
             local count = math.max(1, math.ceil(math.sqrt((x - last.x) ^ 2 + (y - last.y) ^ 2) / 4))
@@ -158,14 +165,14 @@ function E.Path(level)
             end
         end
     else
-        local turns = level == 1 and 1.215 or math.min(2.05, 1.4 + level * 0.045)
+        local turns = level == 1 and 1.215 or math.min(2.05, 1.25 + level * 0.009)
         local phase = level == 1 and -math.pi * 0.8 or level * 0.73
-        local lobes = 3 + level % 4
+        local lobes = 2 + math.floor(level / 20)
         for i = 0, 900 do
             local t = i / 900
             local angle = phase + t * math.pi * 2 * turns
             local ripple = level == 1 and 0
-                or math.sin(angle * lobes + level) * math.min(18, level * 1.5) * math.sin(t * math.pi)
+                or math.sin(angle * lobes + level) * math.min(18, level * 0.18) * math.sin(t * math.pi)
             add(
                 380 + (330 - t * 205 + ripple) * math.cos(angle),
                 250 + (210 - t * 120 + ripple * 0.6) * math.sin(angle)
@@ -239,9 +246,27 @@ function E.Init(db)
     db.options = db.options or {}
     db.appearance = db.appearance or {}
     db.best = db.best or 0
-    db.level = db.level or 1
+    db.level = math.max(1, math.min(E.MAX_LEVEL, db.level or 1))
     local r = db.run
     if r then
+        if not r.level then
+            r.pathVersion = 1
+        end
+        r.level = math.max(1, math.min(E.MAX_LEVEL, r.level or 1))
+        if r.route then
+            r.route = r.level + 1000
+        end
+        if r.other and not E.IsDualLevel(r.level) then
+            r.remaining = r.remaining + r.other.remaining + #r.other.balls
+            r.score = r.score + (r.other.score or 0)
+            r.other = nil
+            r.dual = nil
+            local shift = math.max(0, (r.head or 0) - E.Path(r.level).length * 0.25)
+            for _, ball in ipairs(r.balls) do
+                ball.d = ball.d - shift
+            end
+            r.head = (r.head or 0) - shift
+        end
         if (r.version or 1) < 2 then
             for i, ball in ipairs(r.balls) do
                 ball.d = r.head - (i - 1) * spacing
@@ -268,7 +293,9 @@ function E.Distance(run, index)
     return run.balls[index].d
 end
 function E.Speed(run)
-    return 26 + math.min(run.level - 1, 4) * 4 + math.max(0, math.min(run.level, 30) - 5) * 3
+    local progress = math.max(0, math.min(100, run.level) - 1)
+    local speed = 18 + progress * 0.22 + progress * progress * 0.0015
+    return speed * (run.dual and 0.58 or 1)
 end
 local function pick(run)
     local available = {}
@@ -296,16 +323,18 @@ local function pick(run)
     return available[math.random(math.max(1, #available))] or 1
 end
 local function newLane(db, level, score)
-    level = level or db.level
+    level = math.max(1, math.min(E.MAX_LEVEL, level or db.level))
+    local initial = E.IsDualLevel(level) and (8 + math.floor(level / 25))
+        or (12 + math.floor((level - 1) / 20))
     local run = {
         version = 2,
         pathVersion = 1,
         level = level,
         score = score or 0,
         balls = {},
-        remaining = 76 + math.min(level, 25) * 8,
-        colorCount = 5,
-        head = spacing * 21,
+        remaining = E.MarbleCount(level),
+        colorCount = level < 10 and 3 or level < 25 and 4 or 5,
+        head = spacing * (initial - 1),
         effects = {},
         shotsFired = 0,
         status = 'playing',
@@ -313,7 +342,7 @@ local function newLane(db, level, score)
         cooldown = 0,
     }
     db.run = run
-    for i = 1, 22 do
+    for i = 1, initial do
         run.balls[i] = { color = math.random(run.colorCount), d = run.head - (i - 1) * spacing }
         run.remaining = run.remaining - 1
     end
@@ -322,12 +351,12 @@ local function newLane(db, level, score)
 end
 function E.NewRun(db, level, score)
     local r = newLane(db, level, score)
-    if r.level >= 6 and r.level % 4 == 2 then
+    if E.IsDualLevel(r.level) then
         local holder = { level = r.level }
         local other = newLane(holder, r.level, 0)
         other.route = r.level + 1000
         r.dual, other.dual = true, true
-        local total = 76 + math.min(r.level, 25) * 8
+        local total = E.MarbleCount(r.level)
         r.remaining = math.floor(total / 2) - #r.balls
         other.remaining = total - math.floor(total / 2) - #other.balls
         r.other = other
@@ -644,7 +673,8 @@ local function finish(db, r)
             end
             r.status = 'won'
             E.BeginEnding(r, true)
-            db.level = math.max(db.level, r.level + 1)
+            db.level = math.min(E.MAX_LEVEL, math.max(db.level, r.level + 1))
+            r.campaignComplete = r.level == E.MAX_LEVEL
         end
     elseif #r.balls > 0 and r.head >= E.Path(E.Route(r)).length then
         if A.GameSound then
@@ -744,7 +774,8 @@ function E.Step(db, dt)
             E.BeginEnding(r, true)
             other.status = 'won'
             other.ending = { phase = 'result', done = true, won = true, popupAge = 0.5, age = 2 }
-            db.level = math.max(db.level, r.level + 1)
+            db.level = math.min(E.MAX_LEVEL, math.max(db.level, r.level + 1))
+            r.campaignComplete = r.level == E.MAX_LEVEL
             if A.GameSound then
                 A.GameSound('Win')
             end
@@ -764,7 +795,7 @@ function E.Crossings(level)
         return crossings
     end
     crossingLevel, crossings = level, {}
-    if level < 6 or level % 4 ~= 2 then
+    if not E.IsDualLevel(level) then
         return crossings
     end
     local a, b = E.Path(level), E.Path(level + 1000)

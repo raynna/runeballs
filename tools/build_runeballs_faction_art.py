@@ -125,3 +125,31 @@ compact=Image.open(src/'CompactHoles.png').convert('RGBA')
 compact=compact.resize((2160,720),Image.Resampling.LANCZOS)
 compact.crop((90,150,510,570)).resize((128,128),Image.Resampling.LANCZOS).save(out/'Entry.tga')
 compact.crop((1428,0,2148,720)).resize((128,128),Image.Resampling.LANCZOS).save(out/'Portal.tga')
+
+# Continuous procedural two-arm energy spiral, rather than a particle outline.
+from PIL import ImageFilter
+swirl=Image.new('RGBA',(512,512));pen=ImageDraw.Draw(swirl)
+for arm in range(2):
+    points=[]
+    for step in range(181):
+        t=step/180
+        radius=(5+43*t)*4
+        angle=t*math.pi*2.1+arm*math.pi
+        points.append((256+math.cos(angle)*radius,256+math.sin(angle)*radius))
+    pen.line(points,fill=(110,45,255,235),width=42,joint='curve')
+    pen.line(points,fill=(100,200,255,255),width=18,joint='curve')
+    pen.line(points,fill=(225,245,255,255),width=7,joint='curve')
+glow=swirl.filter(ImageFilter.GaussianBlur(10))
+glow.alpha_composite(swirl)
+glow.resize((128,128),Image.Resampling.LANCZOS).save(out/'PortalSwirl.tga')
+
+# Reuse the original round rim without a baked road stub. Runtime track geometry
+# continues under its center, so curved approaches need no straight overlay.
+round_sheet=Image.open(src/'CrossingsSimple.png').convert('RGBA')
+round_cuts=cuts(round_sheet,0,3)
+round_tile=round_sheet.crop((round_cuts[2],0,round_cuts[3],round_sheet.height))
+round_tile=round_tile.crop(round_tile.getchannel('A').point(lambda a:255 if a>24 else 0).getbbox())
+round_tile.thumbnail((96,96),Image.Resampling.LANCZOS)
+round_canvas=Image.new('RGBA',(128,128))
+round_canvas.alpha_composite(round_tile,((128-round_tile.width)//2,(128-round_tile.height)//2))
+round_canvas.save(out/'Portal.tga')

@@ -125,7 +125,7 @@ local function drawRoad(level)
             t:Show()
         end
         if not entrances[lane] then
-            entrances[lane] = A.Art(entryCovers, 'Entry', 0, 0, 60, 60, 'ARTWORK')
+            entrances[lane] = A.Art(lane == 1 and upperRoad or board, 'Entry', 0, 0, 60, 60, 'BORDER')
         end
         local sx, sy = E.Point(route, 14)
         local tx, ty = E.Point(route, 24)
@@ -175,27 +175,17 @@ function A.Draw()
             texture:SetParent(lane == r and upperRoad or board)
             texture:SetTexture(shotArt(b.color))
             move(texture, E.Point(E.Route(lane), b.d))
-            texture:SetShown(b.d >= 0)
+            texture:SetShown(b.d >= 8)
             local shrink = 1
             if lane.ending and lane.ending.phase == 'drain' then
                 shrink = math.max(0.05, math.min(1, (E.Path(E.Route(lane)).length + 18 - b.d) / 38))
             end
             texture:SetSize(27 * shrink, 27 * shrink)
-            texture:SetAlpha(shrink)
+            texture:SetAlpha(shrink * math.max(0, math.min(1, (b.d - 8) / 12)))
         end
     end
     for i = visualIndex + 1, #balls do
         balls[i]:Hide()
-    end
-    for i, lane in ipairs(r.other and { r, r.other } or { r }) do
-        local mouth = i == 1 and board.exitMouth or board.otherMouth
-        local length = E.Path(E.Route(lane)).length
-        move(mouth, E.Point(E.Route(lane), length - 24))
-        mouth:SetRotation(exitAngle(lane))
-        mouth:SetShown(not (r.ending and r.ending.won))
-    end
-    if not r.other then
-        board.otherMouth:Hide()
     end
     board.otherExit:SetShown(r.other ~= nil)
     if r.other then
@@ -240,8 +230,8 @@ function A.Draw()
     end
     A.FitText(frame.stats, 'ROUND ' .. r.level, 155, 25, 16)
     A.FitText(frame.mapName, E.MapName(r.level), 165, 14, 10)
-    A.FitText(frame.score, A.Number(r.score), 119, 28, 13)
-    A.FitText(frame.best, A.Number(A.db.best), 119, 28, 13)
+    A.FitText(frame.score, A.Number(r.score), frame.scoreWidth, 24, 12)
+    A.FitText(frame.best, A.Number(A.db.best), frame.scoreWidth, 24, 12)
     frame.progress:SetText(tostring(E.Remaining(r)))
     local pressure = E.Pressure(r)
     frame.pressure:SetValue(A.Visuals.Pressure(pressure))
@@ -301,7 +291,7 @@ function A.Draw()
             message = 'Portal sealed'
         end
     end
-    A.FitText(frame.message, message:upper(), 213, 20, 13)
+    A.FitText(frame.message, message:upper(), 213, 18, 12)
     local resultVisible = r.status ~= 'playing' and (not r.ending or r.ending.phase == 'result')
     frame.result:SetShown(resultVisible)
     if resultVisible then
@@ -309,7 +299,14 @@ function A.Draw()
         local t = (not A.MotionReduced() and r.ending) and math.min(1, r.ending.popupAge / 0.35) or 1
         frame.result:SetAlpha(t)
         frame.result:SetScale(0.82 + 0.18 * (1 - (1 - t) ^ 3))
-        frame.result.title:SetText(won and 'VICTORY!' or 'THE VOID WINS')
+        A.FitText(
+            frame.result.title,
+            won and (r.level >= E.MAX_LEVEL and 'CAMPAIGN CLEARED!' or 'VICTORY!') or 'THE VOID WINS',
+            360,
+            30,
+            20
+        )
+
         frame.result.title:SetTextColor(won and 1 or 1, won and 0.84 or 0.35, won and 0.25 or 0.25)
         frame.result.detail:SetText(
             'Round '
@@ -321,7 +318,9 @@ function A.Draw()
                 .. '    Best  '
                 .. A.Number(A.db.best)
         )
-        frame.result.action:SetText(won and 'NEXT ROUND' or 'TRY AGAIN')
+        frame.result.action:SetText(
+            won and (r.level >= E.MAX_LEVEL and 'PLAY AGAIN' or 'NEXT ROUND') or 'TRY AGAIN'
+        )
         frame.result.action:SetEnabled(not r.ending or r.ending.done)
     end
     frame.special:SetText(
@@ -329,7 +328,7 @@ function A.Draw()
     )
     frame.play:SetIcon(r.status == 'playing' and not r.paused and 'PauseIcon' or 'PlayIcon')
     frame.play:SetText(
-        r.status == 'won' and 'NEXT ROUND'
+        r.status == 'won' and (r.level >= E.MAX_LEVEL and 'PLAY AGAIN' or 'NEXT ROUND')
             or r.status == 'lost' and 'TRY AGAIN'
             or r.paused and 'PLAY'
             or 'PAUSE'
@@ -491,22 +490,31 @@ function A.BuildUI()
         local point, _, relative, x, y = frame:GetPoint()
         A.db.options.position = { point = point, relative = relative, x = x, y = y }
     end)
-    A.Button(frame, 'X', 972, 10, 40, 38, nil, A.Close)
+    local close = CreateFrame('Button', nil, frame)
+    close:SetPoint('TOPRIGHT', -15, -12)
+    close:SetSize(30, 30)
+    close:SetNormalTexture(A.media .. 'CloseIcon.tga')
+    close:SetHighlightTexture('Interface\\Buttons\\UI-Common-MouseHilight', 'ADD')
+    close:SetScript('OnClick', A.Close)
+    frame.closeButton = close
     frame.stats = A.GoldLabel(frame, '', 181, -68, 25, 155)
     frame.mapName = A.Label(frame, '', 177, -101, 14, 'body')
     frame.mapName:SetWidth(165)
     frame.mapName:SetJustifyH('CENTER')
     frame.mapName:SetHeight(24)
-    A.Art(frame, 'Trophy', 703, 80, 19, 19, 'OVERLAY')
-    A.Art(frame, 'Crown', 832, 80, 19, 19, 'OVERLAY')
-    local scoreHeading = A.Label(frame, 'SCORE', 715, -68, 15)
-    scoreHeading:SetWidth(80)
-    scoreHeading:SetJustifyH('CENTER')
-    local bestHeading = A.Label(frame, 'BEST', 844, -68, 15)
-    bestHeading:SetWidth(80)
-    bestHeading:SetJustifyH('CENTER')
-    frame.score = A.GoldLabel(frame, '', 684, -92, 28, 119)
-    frame.best = A.GoldLabel(frame, '', 813, -92, 28, 119)
+    local alliance = A.Faction() == 'Alliance'
+    local scoreLeft, bestLeft = alliance and 690 or 689, alliance and 784 or 818
+    local width = alliance and 84 or 109
+    frame.scoreWidth = width
+    for _, entry in ipairs({ { scoreLeft, 'Trophy', 'SCORE' }, { bestLeft, 'Crown', 'BEST' } }) do
+        local center = entry[1] + width / 2
+        A.Art(frame, entry[2], center - 30, 82, 14, 14, 'OVERLAY')
+        local heading = A.Label(frame, entry[3], center - 18, -71, 12)
+        heading:SetWidth(60)
+        heading:SetJustifyH('CENTER')
+    end
+    frame.score = A.GoldLabel(frame, '', scoreLeft, -94, 24, width)
+    frame.best = A.GoldLabel(frame, '', bestLeft, -94, 24, width)
     board = CreateFrame('Frame', nil, frame)
     A.board = board
     board:SetPoint('TOPLEFT', 132, -155)
@@ -530,8 +538,6 @@ function A.BuildUI()
     entryCovers:EnableMouse(false)
     board.exit = A.Art(upperRoad, 'Portal', 0, 0, 60, 60, 'BORDER')
     board.otherExit = A.Art(upperRoad, 'Portal', 0, 0, 60, 60, 'BORDER')
-    board.exitMouth = A.Art(upperRoad, 'Track', 0, 0, 28, 30, 'BORDER')
-    board.otherMouth = A.Art(upperRoad, 'Track', 0, 0, 28, 30, 'BORDER')
     board.launcher = A.Art(board, A.Faction() .. 'Launcher', 380, 250 * YS, 104, 104, 'BORDER')
     for i = 1, 8 do
         aimDots[i] = A.Art(board, 'Dot', 0, 0, 5, 5, 'OVERLAY')
@@ -569,27 +575,29 @@ function A.BuildUI()
     rail:SetTexture('Interface\\Buttons\\WHITE8X8')
     rail:SetVertexColor(0.05, 0.03, 0.06, 1)
     local quest = A.Panel(frame, 35, 625, 290, 83)
-    A.Art(quest, 'QuestGem', 33, 41, 47, 55, 'ARTWORK')
-    frame.message = A.Label(quest, '', 62, -9, 20)
+    A.Art(quest, 'QuestGem', 31, 41, 38, 48, 'ARTWORK')
+    frame.message = A.Label(quest, '', 62, -12, 18)
     frame.message:SetWidth(213)
     frame.message:SetJustifyH('CENTER')
-    frame.special = A.Label(quest, '', 62, -39, 16, 'body')
+    frame.special = A.Label(quest, '', 62, -40, 14, 'body')
     frame.special:SetWidth(213)
-    frame.special:SetHeight(36)
+    frame.special:SetHeight(32)
     frame.special:SetWordWrap(true)
     frame.special:SetJustifyH('CENTER')
     local count = A.Panel(frame, 335, 625, 110, 83)
-    A.Art(count, 'Marbles', 20, 21, 24, 24, 'ARTWORK')
-    A.Label(count, 'MARBLES', 32, -7, 12)
-    frame.progress = A.GoldLabel(count, '', 12, -29, 34, 86)
+    A.Art(count, 'Marbles', 20, 22, 16, 16, 'ARTWORK')
+    local countHeading = A.Label(count, 'MARBLES', 32, -12, 11)
+    countHeading:SetWidth(66)
+    countHeading:SetJustifyH('CENTER')
+    frame.progress = A.GoldLabel(count, '', 12, -34, 28, 86)
     local controls = A.Panel(frame, 455, 625, 220, 83)
     for i, entry in ipairs({
-        { 'MouseLeft', 'Left mouse - Shoot' },
-        { 'MouseRight', 'Right mouse - Swap' },
-        { 'EscapeKey', 'Esc - Pause' },
+        { 'MouseLeft', 'Left-click: shoot' },
+        { 'MouseRight', 'Right-click: swap' },
+        { 'EscapeKey', 'Esc: pause' },
     }) do
-        A.Art(controls, entry[1], 23, 16 + (i - 1) * 24, 24, 22, 'ARTWORK')
-        A.Label(controls, entry[2], 43, -2 - (i - 1) * 24, 14, 'body')
+        A.Art(controls, entry[1], 24, 21 + (i - 1) * 21, 16, 18, 'ARTWORK')
+        A.Label(controls, entry[2], 44, -11 - (i - 1) * 21, 13, 'body')
     end
     frame.play = A.Button(frame, 'PLAY', 685, 637, 145, 57, 'PlayIcon', function()
         local r = A.db.run
@@ -599,7 +607,11 @@ function A.BuildUI()
             return
         end
         if r.status == 'won' then
-            r = E.NewRun(A.db, r.level + 1, r.score)
+            r = E.NewRun(
+                A.db,
+                r.level >= E.MAX_LEVEL and 1 or r.level + 1,
+                r.level >= E.MAX_LEVEL and 0 or r.score
+            )
         elseif r.status == 'lost' then
             r = E.NewRun(A.db, r.level, 0)
         end
@@ -622,6 +634,7 @@ function A.BuildUI()
     result.title = A.Label(result, '', 0, 0, 34)
     result.title:ClearAllPoints()
     result.title:SetPoint('TOP', 0, -24)
+    result.title:SetJustifyH('CENTER')
     result.detail = A.Label(result, '', 0, 0, 17, 'body')
     result.detail:ClearAllPoints()
     result.detail:SetPoint('TOP', 0, -79)

@@ -1,3 +1,21 @@
+# 0.5.0
+
+- A 100-level campaign with slower early rounds and gradually increasing speed, ball count and colours.
+- Single paths through level 29. Dual paths begin at level 30 and run at 58% per-lane speed, with shorter starting chains.
+- Completing level 100 offers Play Again; personal bests are retained.
+- Balls appear inside the entrance light instead of being masked until the road.
+- Round exit rims use the actual curved road underneath, with no straight baked road stub.
+- Continuous rotating portal spiral replaces the dotted swirl.
+- Smaller, inset HUD icons and text; faction-specific score widths; a proper icon-only X button.
+- Existing early dual-path saves become single-lane runs while retaining score and remaining marbles.
+
+Install the ZIP's RaynnaRuneballs folder into Interface/AddOns. Use /reload, then /rrb.
+
+Validation: Lua 5.1 tests over 100 routes, campaign completion/replay, pacing,
+legacy-save conversion, entrance layering, portal animation, close button,
+shared flight chooser, StyLua and offline Alliance/Horde previews. Actual WoW
+Forever rendering still needs checking in game.
+
 # 0.4.5
 
 - Animated two-arm portal swirls inside the compact exit pits.
