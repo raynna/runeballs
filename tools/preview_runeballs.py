@@ -7,7 +7,10 @@ MEDIA=ROOT/'RaynnaRuneballs/Media'
 scenes=json.loads((ROOT/'.test-deps/runeballs-scenes.json').read_text())
 def preview(faction,scene):
  im=Image.new('RGBA',(1024,720),(25,20,27,255))
- im.alpha_composite(Image.open(MEDIA/(faction+'Frame.tga')).resize((1024,683)))
+ art=Image.open(MEDIA/(faction+'Frame.tga'))
+ footer=art.crop((132,600,892,765)).resize((1024,110),Image.Resampling.LANCZOS)
+ im.alpha_composite(footer,(0,610))
+ im.alpha_composite(art.resize((1024,683)))
  d=ImageDraw.Draw(im)
  def text(value,x,y,size=20,gold=False,width=None):
   font=ImageFont.truetype(str(MEDIA/'Fonts/LilitaOne.ttf'),size)

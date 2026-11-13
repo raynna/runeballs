@@ -1,3 +1,10 @@
+# 0.5.7
+
+- Added an opaque faction-stone footer behind the full bottom controls, covering the gap below the original illustration.
+- Fixed developer demo access for the actual character name Its-Raynna. Name matching now ignores hyphens as well as spaces and case.
+
+Lua 5.1 tests and StyLua passed; both faction footer previews reviewed. Use /reload, then /rrb demo 100 (or any round 1–100). Saves remain untouched.
+
 # 0.5.6
 
 - Developer command `/rrb demo N` starts any round 1–100 immediately with normal round speed and lanes. `//rrb` is also registered as an alias.

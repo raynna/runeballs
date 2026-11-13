@@ -159,6 +159,7 @@ function A.Draw()
     end
     drawRoad(r.level)
     frame.art:SetTexture(A.media .. A.Faction() .. 'Frame.tga')
+    frame.footer:SetTexture(A.media .. A.Faction() .. 'Frame.tga')
     board.launcher:SetTexture(A.media .. A.Faction() .. 'Launcher.tga')
     local visualIndex = 0
     for _, lane in ipairs(r.other and { r, r.other } or { r }) do
@@ -465,7 +466,14 @@ function A.BuildUI()
         frame:SetPoint('CENTER')
     end
     A.Skin(frame)
-    -- Source illustration is 3:2. Keep its aspect ratio; the HUD extends below it.
+    -- An opaque stone footer fills the area below the 3:2 illustration.
+    local backing = frame:CreateTexture(nil, 'BACKGROUND')
+    backing:SetAllPoints(frame)
+    backing:SetTexture('Interface\\Buttons\\WHITE8X8')
+    backing:SetVertexColor(0.10, 0.08, 0.09, 1)
+    frame.footer = A.Art(frame, A.Faction() .. 'Frame', 512, 665, 1024, 110, 'BORDER')
+    frame.footer:SetTexCoord(132 / 1024, 892 / 1024, 400 / (2048 / 3), 510 / (2048 / 3))
+    -- Keep the main illustration's aspect ratio and board coordinates unchanged.
     frame.art = A.Art(frame, A.Faction() .. 'Frame', 512, 1024 / 3, 1024, 2048 / 3, 'ARTWORK')
     A.ApplyAppearance()
     local shade = frame:CreateTexture(nil, 'OVERLAY')

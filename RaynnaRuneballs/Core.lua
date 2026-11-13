@@ -139,7 +139,7 @@ end)
 -- Demo state is session-only; the real SavedVariables table keeps campaign data.
 local campaignDB
 local function demo(value)
-    local name = (UnitName('player') or ''):lower():gsub('%s+', '')
+    local name = (UnitName('player') or ''):lower():gsub('[%s%-]+', '')
     if name ~= 'itsraynna' then
         print('Runeballs: demo commands are restricted to Its Raynna.')
         return

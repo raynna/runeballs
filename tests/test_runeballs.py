@@ -524,7 +524,7 @@ for _,v in ipairs({'0','101','2.5','nope',''}) do SlashCmdList.RAYNNARUNEBALLS('
 A.db.best=999999;A.db.level=100
 SlashCmdList.RAYNNARUNEBALLS('demo off')
 assert(A.db==saved and A.db.run==campaign and saved.best==best and saved.level==level and campaign.paused)
-function UnitName() return 'Itsraynna' end
+function UnitName() return 'Its-Raynna' end
 SlashCmdList.RAYNNARUNEBALLS('demo 42');assert(A.db.run.level==42)
 SlashCmdList.RAYNNARUNEBALLS('demo off')
 """)
