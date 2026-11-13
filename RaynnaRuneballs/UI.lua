@@ -66,22 +66,27 @@ local function cover(pool, index, parent, left, top, width, height)
     patch:Show()
 end
 local function coveredGuide(route, from, to, parent)
-    for distance = from, to, 14 do
-        guideCount = guideCount + 1
-        local dash = guides[guideCount]
-        if not dash then
-            dash = parent:CreateTexture(nil, 'OVERLAY')
-            dash:SetTexture('Interface\\Buttons\\WHITE8X8')
-            guides[guideCount] = dash
-        end
-        dash:SetParent(parent)
+    for distance = from, to, 26 do
         local x, y = E.Point(route, distance)
-        local nx, ny = E.Point(route, distance + 4)
-        move(dash, x, y)
-        dash:SetSize(6, 2)
-        dash:SetRotation(-math.atan2((ny - y) * YS, nx - x))
-        dash:SetVertexColor(0.68, 0.54, 0.35, 0.55)
-        dash:Show()
+        local px, py = E.Point(route, distance - 4)
+        local angle = math.atan2((y - py) * YS, x - px)
+        -- Two short strokes form a forward chevron, not a font glyph.
+        for side = -1, 1, 2 do
+            guideCount = guideCount + 1
+            local arrow = guides[guideCount]
+            if not arrow then
+                arrow = parent:CreateTexture(nil, 'OVERLAY')
+                arrow:SetTexture('Interface\\Buttons\\WHITE8X8')
+                guides[guideCount] = arrow
+            end
+            arrow:SetParent(parent)
+            local wing = angle + side * 0.65
+            move(arrow, x - math.cos(wing) * 3, y - math.sin(wing) * 3 / YS)
+            arrow:SetSize(7, 2)
+            arrow:SetRotation(-wing)
+            arrow:SetVertexColor(0.74, 0.61, 0.41, 0.7)
+            arrow:Show()
+        end
     end
 end
 local function exitAngle(lane)
@@ -119,21 +124,15 @@ local function drawRoad(level)
             t:SetRotation(-math.atan2(dy, dx))
             t:Show()
         end
-        local sx, sy = E.Point(route, 0)
-        local tx, ty = E.Point(route, 88)
-        local left, top = math.min(sx, tx) - 18, math.min(sy, ty) * YS - 18
-        cover(
-            entrances,
-            lane,
-            lane == 1 and entryCovers or covers,
-            left,
-            top,
-            math.abs(tx - sx) + 36,
-            math.abs(ty - sy) * YS + 36
-        )
-    end
-    for lane, route in ipairs(routes) do
-        coveredGuide(route, 8, 80, lane == 1 and entryCovers or covers)
+        if not entrances[lane] then
+            entrances[lane] = A.Art(entryCovers, 'Portal', 0, 0, 60, 60, 'ARTWORK')
+        end
+        local sx, sy = E.Point(route, 14)
+        local tx, ty = E.Point(route, 24)
+        move(entrances[lane], sx, sy)
+        entrances[lane]:SetRotation(-math.atan2((ty - sy) * YS, tx - sx) + math.pi)
+        entrances[lane]:SetVertexColor(0.8, 0.9, 1, 1)
+        entrances[lane]:Show()
     end
     for i = #routes + 1, #entrances do
         entrances[i]:Hide()
@@ -192,14 +191,14 @@ function A.Draw()
     if r.other then
         move(board.otherExit, E.Point(E.Route(r.other), E.Path(E.Route(r.other)).length))
         board.otherExit:SetRotation(exitAngle(r.other))
-        board.otherExit:SetSize(112, 112)
+        board.otherExit:SetSize(60, 60)
         board.otherExit:SetAlpha(1)
         if r.ending and r.ending.won then
             local seal = math.max(0, 1 - r.ending.age / 1.1)
-            board.otherExit:SetSize(math.max(1, 112 * seal), math.max(1, 112 * seal))
+            board.otherExit:SetSize(math.max(1, 60 * seal), math.max(1, 60 * seal))
             board.otherExit:SetAlpha(seal)
         elseif r.ending and r.ending.phase == 'drain' then
-            board.otherExit:SetSize(125, 125)
+            board.otherExit:SetSize(66, 66)
         end
     end
     board.loaded:SetTexture(shotArt(r.loaded, r.loadedKind))
@@ -215,18 +214,18 @@ function A.Draw()
     board.exit:SetVertexColor(1, danger and 0.35 or 1, danger and 0.35 or 1)
     board.exit:SetRotation(exitAngle(r))
     board.exit:SetSize(
-        112 + (A.MotionReduced() and 0 or math.sin(clock * (danger and 10 or 3)) * 4),
-        112 + (A.MotionReduced() and 0 or math.sin(clock * (danger and 10 or 3)) * 4)
+        60 + (A.MotionReduced() and 0 or math.sin(clock * (danger and 10 or 3)) * 4),
+        60 + (A.MotionReduced() and 0 or math.sin(clock * (danger and 10 or 3)) * 4)
     )
     board.exit:SetAlpha(1)
     if r.ending then
         if r.ending.won then
             local seal = math.max(0, 1 - r.ending.age / 1.1)
-            board.exit:SetSize(math.max(1, 112 * seal), math.max(1, 112 * seal))
+            board.exit:SetSize(math.max(1, 60 * seal), math.max(1, 60 * seal))
             board.exit:SetAlpha(seal)
         elseif r.ending.phase == 'drain' then
             board.exit:SetRotation(exitAngle(r))
-            board.exit:SetSize(125, 125)
+            board.exit:SetSize(66, 66)
         end
     end
     A.FitText(frame.stats, 'ROUND ' .. r.level, 155, 25, 16)
@@ -519,8 +518,8 @@ function A.BuildUI()
     entryCovers:SetAllPoints(board)
     entryCovers:SetFrameLevel(board:GetFrameLevel() + 3)
     entryCovers:EnableMouse(false)
-    board.exit = A.Art(upperRoad, 'Portal', 0, 0, 112, 112, 'BORDER')
-    board.otherExit = A.Art(upperRoad, 'Portal', 0, 0, 112, 112, 'BORDER')
+    board.exit = A.Art(upperRoad, 'Portal', 0, 0, 60, 60, 'BORDER')
+    board.otherExit = A.Art(upperRoad, 'Portal', 0, 0, 60, 60, 'BORDER')
     board.launcher = A.Art(board, A.Faction() .. 'Launcher', 380, 250 * YS, 104, 104, 'BORDER')
     for i = 1, 8 do
         aimDots[i] = A.Art(board, 'Dot', 0, 0, 5, 5, 'OVERLAY')

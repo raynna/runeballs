@@ -301,8 +301,8 @@ local x,y=E.Point(E.Route(r.other),c.under)
 r.shot={x=x,y=y,vx=1,vy=1,color=1,kind='Bomb'}
 E.Step(db,0.01)
 assert(r.shot and #r.other.balls==1,'shot cannot hit a ball in the covered tunnel')
-r=E.NewRun(db,1);r.paused=false;r.remaining=0;r.balls={{color=1,d=40}}
-x,y=E.Point(1,40);r.shot={x=x,y=y,vx=1,vy=1,color=2}
+r=E.NewRun(db,1);r.paused=false;r.remaining=0;r.balls={{color=1,d=14}}
+x,y=E.Point(1,14);r.shot={x=x,y=y,vx=1,vy=1,color=2}
 E.Step(db,0.01);assert(r.shot and #r.balls==1,'entrance roof shields balls too')
 """)
 print('PASS: clear perpendicular crossings and long tunnel hit protection')
@@ -326,3 +326,22 @@ PlaySound=function(id) HIT_SOUND=id end
 A.GameSound('Hit');assert(HIT_SOUND==856)
 """)
 print('PASS: single-layer scores, bounded text fitting and subtle native hit sound')
+
+lua=runtime()
+lua.execute("""
+local E=A.Engine
+for level=6,58,4 do
+ for _,route in ipairs({level,level+1000}) do
+  local path=E.Path(route)
+  local x,y=E.Point(route,path.length)
+  for _,other in ipairs({level,level+1000}) do
+   local limit=E.Path(other).length-(other==route and 90 or 0)
+   for d=0,limit,4 do
+    local px,py=E.Point(other,d)
+    assert((x-px)^2+((y-py)*0.86)^2>47^2,'compact exit clears nearby roads')
+   end
+  end
+ end
+end
+""")
+print('PASS: compact exit clearance from neighbouring roads on all dual rounds')

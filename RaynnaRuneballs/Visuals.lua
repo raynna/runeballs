@@ -116,7 +116,7 @@ function V.Draw(r, active)
             local x, y = A.Engine.Point(A.Engine.Route(lane), A.Engine.Path(A.Engine.Route(lane)).length)
             local draining = r.ending and r.ending.phase == 'drain'
             local phase = (timer * (draining and 1.3 or 0.22) + (i % 8) / 8) % 1
-            local radius = draining and (43 * (1 - phase)) or 33 + math.sin(timer * 2 + i) * 3
+            local radius = draining and (24 * (1 - phase)) or 18 + math.sin(timer * 2 + i) * 2
             local angle = phase * math.pi * 2
             move(spark, x + math.cos(angle) * radius, y + math.sin(angle) * radius / 0.86)
             spark:SetAlpha(draining and (1 - phase) * 0.8 or 0.35)

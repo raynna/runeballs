@@ -36,21 +36,15 @@ def preview(faction,scene):
   for c in scene['crossings']:
    x,y,w,h=c['bounds'];coverbox(132+x,155+y,132+x+w,155+y+h)
    for gx,gy,angle in c['guide']:
-    d.line((132+gx-3*math.cos(angle),155+gy*.86-3*math.sin(angle),132+gx+3*math.cos(angle),155+gy*.86+3*math.sin(angle)),fill=(120,103,76),width=2)
- for route in routes:
-  sx,sy=route[0];distance=0;tx,ty=sx,sy
-  for x,y in route[1:]:
-   distance+=math.hypot(x-tx,y-ty);tx,ty=x,y
-   if distance>=88:break
-  coverbox(132+min(sx,tx)-18,155+min(sy,ty)*.86-18,132+max(sx,tx)+18,155+max(sy,ty)*.86+18)
+    for side in [-1,1]:
+     wing=angle+side*.65;d.line((132+gx-6*math.cos(wing),155+gy*.86-6*math.sin(wing),132+gx,155+gy*.86),fill=(145,122,83),width=2)
  road(scene['path']);marbles(scene['marbles'])
- route=scene['path'];sx,sy=route[0];tx,ty=route[1]
- # Main entrance cover sits above its own road; secondary cover stays below it.
- angle=math.atan2(ty-sy,tx-sx);tx=sx+math.cos(angle)*88;ty=sy+math.sin(angle)*88
- coverbox(132+min(sx,tx)-18,155+min(sy,ty)*.86-18,132+max(sx,tx)+18,155+max(sy,ty)*.86+18)
  for route in routes:
+  sx,sy=route[0];tx,ty=route[1];a=math.atan2(ty-sy,tx-sx)
+  ex,ey=sx+math.cos(a)*14,sy+math.sin(a)*14
+  sprite('Portal',132+ex,155+ey*.86,60,60,180-math.degrees(math.atan2((ty-sy)*.86,tx-sx)))
   ex,ey=route[-1];px,py=route[-2];angle=-math.degrees(math.atan2((ey-py)*.86,ex-px))
-  sprite('Portal',132+ex,155+ey*.86,112,112,angle)
+  sprite('Portal',132+ex,155+ey*.86,60,60,angle)
  sprite(faction+'Launcher',512,370,104,104);sprite('Ball2',512,370,34,34)
  sprite('Bomb',512,427,28,28);text('NEXT',512,446,14)
  text('ROUND '+str(scene['level']),258,72,25,True,155);text(scene['name'],259,105,14,False,165)

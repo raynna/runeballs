@@ -1,3 +1,18 @@
+# 0.4.2
+
+- Restored visible starting holes at every board edge.
+- Compact entrance/exit holes sized around a marble with a stone rim and aligned road mouth.
+- More spacing between parallel roads and around exits, with automated clearance checks.
+- Directional arrow markers show the route beneath background-covered sections.
+- Retains equal-length mirrored lanes, two perpendicular crossings, quiet shot/hit sounds and corrected text fitting.
+
+Install the ZIP's RaynnaRuneballs folder into Interface/AddOns. Use /reload and
+/rrb to test. Tower Defense 0.4.3+ enables the shared flight chooser alongside
+Runeballs; PeggleForever is detected automatically.
+
+Validated with Lua 5.1 mock tests, route/collision/clearance tests, StyLua and
+offline faction previews. Actual client rendering still needs an in-game check.
+
 # 0.4.1
 
 - Clear, perpendicular crossings with the lower road and marbles hidden behind matching stone background sections, plus subtle buried-route guides.
