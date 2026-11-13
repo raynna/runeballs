@@ -1,6 +1,6 @@
 # Raynna's Runeballs
 
-A standalone coloured-marble shooter for WoW Forever (Interface 16001), version 0.4.4.
+A standalone coloured-marble shooter for WoW Forever (Interface 16001), version 0.4.5.
 Aim an arcane launcher into a winding chain and match three or more marbles
 before its leading ball reaches the void portal. Joining matching groups creates
 chain reactions and score multipliers. Every round has a distinct route: a grove
@@ -132,3 +132,7 @@ a 100-pixel clearance radius around the launcher center, also protecting the nex
 ammunition display. Dual routes retain exact equal lengths, clear perpendicular
 crossings, underground arrows and widely separated exits. Entrance coordinates
 extend to the illustrated border; covered entry balls remain protected.
+
+Version 0.4.5 adds a rotating two-arm portal swirl inside each exit and a soft
+teal pulse inside each entrance during play. Reduced motion uses steady glows.
+Effects use preallocated textures and stop on pause/close.

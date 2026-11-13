@@ -360,3 +360,21 @@ for level=1,60 do
 end
 """)
 print('PASS: launcher and next-ammo clearance across 60 rounds')
+
+lua=runtime()
+lua.execute("""
+A.events.OnEvent(A.events,'ADDON_LOADED','RaynnaRuneballs')
+A.events.OnEvent(A.events,'PLAYER_LOGIN')
+local r=A.Engine.NewRun(A.db,6);r.paused=false
+A.Open(false);r.paused=false
+local hole=A.Visuals.holes[1]
+hole.entry.SetAlpha=function(self,value) self.alphaValue=value end
+A.Visuals.Tick(0.05,r);A.Draw()
+local alpha=hole.entry.alphaValue
+assert(hole.swirl[1]:IsShown() and A.Visuals.holes[2].exit:IsShown())
+A.Visuals.Tick(0.4,r);A.Draw();assert(hole.entry.alphaValue~=alpha,'entrance pulse advances')
+A.db.options.reducedMotion=true;A.Draw()
+assert(hole.entry:IsShown() and hole.exit:IsShown() and not hole.swirl[1]:IsShown())
+A.Close();assert(not hole.entry:IsShown() and not hole.exit:IsShown())
+""")
+print('PASS: animated portal interior, entrance pulse, reduced motion and close cleanup')

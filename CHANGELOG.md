@@ -1,3 +1,16 @@
+# 0.4.5
+
+- Animated two-arm portal swirls inside the compact exit pits.
+- Soft teal pulsing lights inside the distinct border entrances.
+- Faster inward motion during defeat; steady glows with reduced motion enabled.
+- Effects remain inside the openings, reuse pooled textures and stop on pause/close.
+
+Includes the 0.4.4 border entrances, aligned small exits, launcher clearance,
+equal-length dual paths, underground arrows, text fixes and subtle hit sounds.
+
+Use /reload then /rrb. Lua 5.1 tests cover animation, cleanup, reduced motion,
+routes, collision and saved runs. Actual client rendering still needs checking.
+
 # 0.4.4
 
 - Distinct teal stone starting openings built into the actual board borders.

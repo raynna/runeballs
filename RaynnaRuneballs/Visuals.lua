@@ -10,6 +10,7 @@ local pressure
 local trail, pops, embers, orbit = {}, {}, {}, {}
 local glow, arrow, muzzle, specialGlow
 local holeSparks = {}
+V.holes = {}
 local function move(t, x, y)
     t:ClearAllPoints()
     t:SetPoint('CENTER', board, 'TOPLEFT', x, -y * 0.86)
@@ -38,8 +39,29 @@ function V.Build(owner, field)
         orbit[i]:SetVertexColor(0.7, 0.4, 1)
         orbit[i]:Hide()
     end
+    local portalLayer = CreateFrame('Frame', nil, board)
+    portalLayer:SetAllPoints(board)
+    portalLayer:SetFrameLevel(board:GetFrameLevel() + 4)
+    portalLayer:EnableMouse(false)
+    for i = 1, 2 do
+        local hole = {}
+        hole.entry = A.Art(portalLayer, 'Halo', 0, 0, 30, 30, 'OVERLAY')
+        hole.entry:SetVertexColor(0.1, 1, 0.65)
+        hole.entry:SetBlendMode('ADD')
+        hole.exit = A.Art(portalLayer, 'Halo', 0, 0, 28, 28, 'OVERLAY')
+        hole.exit:SetVertexColor(0.65, 0.18, 1)
+        hole.exit:SetBlendMode('ADD')
+        hole.swirl = {}
+        for n = 1, 16 do
+            local dot = A.Art(portalLayer, 'Dot', 0, 0, 3, 3, 'OVERLAY')
+            dot:SetVertexColor(0.8, 0.45, 1)
+            dot:SetBlendMode('ADD')
+            hole.swirl[n] = dot
+        end
+        V.holes[i] = hole
+    end
     for i = 1, 16 do
-        holeSparks[i] = A.Art(board, 'Spark', 0, 0, 10, 10, 'OVERLAY')
+        holeSparks[i] = A.Art(portalLayer, 'Spark', 0, 0, 10, 10, 'OVERLAY')
         holeSparks[i]:SetBlendMode('ADD')
         holeSparks[i]:Hide()
     end
@@ -60,6 +82,13 @@ function V.Reset()
     for _, list in ipairs({ trail, pops, embers, orbit, holeSparks }) do
         for _, t in ipairs(list) do
             t:Hide()
+        end
+    end
+    for _, hole in ipairs(V.holes) do
+        hole.entry:Hide()
+        hole.exit:Hide()
+        for _, dot in ipairs(hole.swirl) do
+            dot:Hide()
         end
     end
     muzzle:Hide()
@@ -108,6 +137,37 @@ function V.Tick(dt, r)
     board:SetPoint('TOPLEFT', 132 + offset, -155)
 end
 function V.Draw(r, active)
+    local animated = not A.MotionReduced() and not r.paused
+    for i, hole in ipairs(V.holes) do
+        local lane = i == 1 and r or r.other
+        local sealed = r.ending and r.ending.won
+        hole.entry:SetShown(lane ~= nil)
+        hole.exit:SetShown(lane ~= nil and not sealed)
+        if lane then
+            local route = A.Engine.Route(lane)
+            local ex, ey = A.Engine.Point(route, 14)
+            move(hole.entry, ex, ey)
+            hole.entry:SetAlpha(animated and (0.4 + math.sin(timer * 2.2 + i) * 0.2) or 0.4)
+            local x, y = A.Engine.Point(route, A.Engine.Path(route).length)
+            move(hole.exit, x, y)
+            hole.exit:SetAlpha(animated and (0.6 + math.sin(timer * 1.7) * 0.12) or 0.55)
+            local draining = r.ending and r.ending.phase == 'drain'
+            for n, dot in ipairs(hole.swirl) do
+                dot:SetShown(animated and not sealed)
+                if animated and not sealed then
+                    local fraction = ((n - 1) % 8) / 7
+                    local angle = timer * (draining and 4 or 1.2) + fraction * 4 + (n > 8 and math.pi or 0)
+                    local radius = 2 + fraction * 10
+                    move(dot, x + math.cos(angle) * radius, y + math.sin(angle) * radius / 0.86)
+                    dot:SetAlpha(0.35 + fraction * 0.45)
+                end
+            end
+        else
+            for _, dot in ipairs(hole.swirl) do
+                dot:Hide()
+            end
+        end
+    end
     for i, spark in ipairs(holeSparks) do
         local lane = i <= 8 and r or r.other
         local visible = lane and not r.paused and not A.MotionReduced() and not (r.ending and r.ending.won)
