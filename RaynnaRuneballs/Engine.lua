@@ -509,6 +509,8 @@ function E.Insert(run, index, color, target)
     return matched
 end
 function E.Special(run, index, kind)
+    local x, y = E.Point(E.Route(run), run.balls[index].d)
+    run.specialImpact = { x = x, y = y, kind = kind, age = 0 }
     if A.GameSound then
         A.GameSound(kind)
     end
@@ -619,8 +621,8 @@ function E.Fire(run, x, y)
     run.loadedKind = run.nextKind
     run.shotsFired = run.shotsFired + 1
     run.nextKind = nil
-    if run.shotsFired % 7 == 0 then
-        run.nextKind = ({ 'Bomb', 'Frost', 'Rewind' })[(math.floor(run.shotsFired / 7) - 1) % 3 + 1]
+    if run.shotsFired % 14 == 0 then
+        run.nextKind = ({ 'Bomb', 'Frost', 'Rewind' })[(math.floor(run.shotsFired / 14) - 1) % 3 + 1]
     end
     run.cooldown = 0.10
     if A.GameSound then
@@ -629,6 +631,12 @@ function E.Fire(run, x, y)
     return true
 end
 function E.Animate(r, dt)
+    if r.specialImpact then
+        r.specialImpact.age = r.specialImpact.age + dt
+        if r.specialImpact.age >= 0.8 then
+            r.specialImpact = nil
+        end
+    end
     for i = #r.effects, 1, -1 do
         r.effects[i].age = r.effects[i].age + dt
         if r.effects[i].age > 0.6 then

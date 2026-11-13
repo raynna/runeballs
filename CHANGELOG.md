@@ -1,3 +1,12 @@
+# 0.5.11
+
+- Special ammunition is awarded every 14 shots instead of every 7, halving its frequency while preserving the Bomb/Frost/Rewind rotation.
+- Added distinct short impact effects: orange explosive embers, cyan frost shards, and inward-spiralling violet rewind sparks.
+- Special projectile trails use their ability colour. Effects render above roads, support both lanes, expire after 0.8 seconds and clean up on close.
+- Reduced motion replaces moving particles with a static fading glow.
+
+Lua 5.1 tests cover rarity, impact lifetime, both lanes, layering, reduced motion and cleanup. StyLua passed and unchanged faction layouts reviewed. Use /reload; saves are preserved. Not playtested inside WoW.
+
 # 0.5.10
 
 Includes the distinct late-round layouts, capped tunnels, round-one restart after defeat, chat sharing and slower combo animations from 0.5.9.

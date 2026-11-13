@@ -83,9 +83,9 @@ E.Step(db,0.05);assert(r.balls[#r.balls].d-tail<1,'frost slows rear driver')
 E.Special(r,#r.balls,'Rewind');assert(r.reverse==2.5)
 tail=r.balls[#r.balls].d
 E.Step(db,0.05);assert(r.balls[#r.balls].d<tail,'rewind moves backwards, including behind entrance')
-for i=1,21 do
+for i=1,42 do
     r.shot=nil;r.cooldown=0;assert(E.Fire(r,10,10))
-    if i%7==0 then assert(r.nextKind==({'Bomb','Frost','Rewind'})[i/7]) end
+    if i%14==0 then assert(r.nextKind==({'Bomb','Frost','Rewind'})[i/14]) else assert(not r.nextKind) end
 end
 r.nextKind='Bomb';r.loadedKind=nil;E.Swap(r);assert(r.loadedKind=='Bomb' and not r.nextKind)
 
@@ -611,3 +611,27 @@ p.choose:GetScript('OnClick')();p.send:GetScript('OnClick')();assert(sent[3][2]=
 A.db.demo=true;assert(A.ShareMessage(r):find('[Demo]',1,true)==1)
 """)
 print('PASS: loss restarts round one, slower combos, result preview and explicit chat sharing')
+
+lua.execute("""
+local E=A.Engine
+A.db.demo=nil
+for _,kind in ipairs({'Bomb','Frost','Rewind'}) do
+ local r=E.NewRun(A.db,30);r.paused=false
+ E.Special(r.other,3,kind)
+ assert(r.other.specialImpact.kind==kind and r.other.specialImpact.age==0)
+ A.Draw()
+ local fx=A.Visuals.specialBursts[2]
+ assert(fx.core:IsShown() and fx.particles[1]:IsShown())
+ assert(fx.core.parent==A.board.effectLayer)
+ E.Animate(r.other,.4);A.Draw();assert(fx.core.alpha>0 and fx.core.alpha<.65)
+ A.db.options.reducedMotion=true;A.Draw()
+ assert(fx.core:IsShown() and not fx.particles[1]:IsShown())
+ A.db.options.reducedMotion=false
+ E.Animate(r.other,.41);A.Draw();assert(not r.other.specialImpact and not fx.core:IsShown())
+end
+local r=A.db.run;E.Special(r,2,'Bomb');A.Draw();A.Close()
+for _,fx in ipairs(A.Visuals.specialBursts) do
+ assert(not fx.core:IsShown());for _,p in ipairs(fx.particles) do assert(not p:IsShown()) end
+end
+""")
+print('PASS: distinct special impacts, dual-lane drawing, lifetime, reduced motion and close cleanup')

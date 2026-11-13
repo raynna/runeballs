@@ -10,6 +10,9 @@ local pressure
 local trail, pops, embers, orbit = {}, {}, {}, {}
 local glow, arrow, muzzle, specialGlow
 local holeSparks = {}
+local specialBursts = {}
+local specialColors = { Bomb = { 1, 0.48, 0.08 }, Frost = { 0.3, 0.85, 1 }, Rewind = { 0.75, 0.35, 1 } }
+V.specialBursts = specialBursts
 V.holes = {}
 local function move(t, x, y)
     t:ClearAllPoints()
@@ -60,6 +63,17 @@ function V.Build(owner, field)
         holeSparks[i]:SetBlendMode('ADD')
         holeSparks[i]:Hide()
     end
+    for lane = 1, 2 do
+        local burst = { particles = {} }
+        burst.core = A.Art(board.effectLayer, 'Halo', 0, 0, 80, 80, 'OVERLAY')
+        burst.core:SetBlendMode('ADD')
+        burst.core:Hide()
+        for i = 1, 12 do
+            burst.particles[i] = A.Art(board.effectLayer, 'Spark', 0, 0, 12, 12, 'OVERLAY')
+            burst.particles[i]:Hide()
+        end
+        specialBursts[lane] = burst
+    end
     for i = 1, 32 do
         pops[i] = A.Art(board.effectLayer, 'Ball1', 0, 0, 27, 27, 'ARTWORK')
         pops[i]:Hide()
@@ -84,6 +98,12 @@ function V.Reset()
         hole.exit:Hide()
         for _, dot in ipairs(hole.swirl) do
             dot:Hide()
+        end
+    end
+    for _, burst in ipairs(specialBursts) do
+        burst.core:Hide()
+        for _, particle in ipairs(burst.particles) do
+            particle:Hide()
         end
     end
     muzzle:Hide()
@@ -132,6 +152,52 @@ function V.Tick(dt, r)
     board:SetPoint('TOPLEFT', 132 + offset, -155)
 end
 function V.Draw(r, active)
+    for lane, burst in ipairs(specialBursts) do
+        local state = lane == 1 and r or r.other
+        local impact = state and state.specialImpact
+        burst.core:SetShown(impact ~= nil)
+        if impact then
+            local progress = math.min(1, impact.age / 0.8)
+            local reduced = A.MotionReduced()
+            local color = specialColors[impact.kind]
+            local rewind = impact.kind == 'Rewind'
+            burst.core:SetTexture(A.media .. (rewind and 'PortalSwirl' or 'Halo') .. '.tga')
+            burst.core:SetVertexColor(unpack(color))
+            move(burst.core, impact.x, impact.y)
+            local size = reduced and 55 or rewind and (85 - progress * 45) or (40 + progress * 100)
+            burst.core:SetSize(size, size)
+            burst.core:SetAlpha((1 - progress) * 0.65)
+            burst.core:SetRotation(not reduced and rewind and -progress * 5 or 0)
+            for i, particle in ipairs(burst.particles) do
+                particle:SetShown(not reduced)
+                if not reduced then
+                    local angle = i * math.pi / 6 + (rewind and -progress * 4 or 0)
+                    local radius = rewind and (65 * (1 - progress))
+                        or (10 + progress * (i % 2 == 0 and 70 or 45))
+                    local gravity = impact.kind == 'Bomb' and progress * progress * 35 or 0
+                    move(
+                        particle,
+                        impact.x + math.cos(angle) * radius,
+                        impact.y + math.sin(angle) * radius + gravity
+                    )
+                    particle:SetTexture(
+                        A.media .. (impact.kind == 'Frost' and 'Shatter' or 'Spark') .. '.tga'
+                    )
+                    particle:SetVertexColor(unpack(color))
+                    particle:SetSize(
+                        (impact.kind == 'Frost' and 17 or 12) * (1 - progress * 0.6),
+                        12 * (1 - progress * 0.6)
+                    )
+                    particle:SetRotation(angle + progress * (rewind and -4 or 2))
+                    particle:SetAlpha((1 - progress) * 0.9)
+                end
+            end
+        else
+            for _, particle in ipairs(burst.particles) do
+                particle:Hide()
+            end
+        end
+    end
     local animated = not A.MotionReduced() and not r.paused
     for i, hole in ipairs(V.holes) do
         local lane = i == 1 and r or r.other
@@ -212,7 +278,7 @@ function V.Draw(r, active)
             t:SetShown(x >= 0 and x <= 760 and y >= 0 and y <= 500)
             t:SetAlpha((1 - i / 7) * 0.7)
             t:SetSize(24 - i * 2, 24 - i * 2)
-            t:SetVertexColor(unpack(A.colors[shot.color]))
+            t:SetVertexColor(unpack(shot.kind and specialColors[shot.kind] or A.colors[shot.color]))
         end
     end
     for i, t in ipairs(pops) do
