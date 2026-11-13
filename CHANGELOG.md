@@ -1,3 +1,11 @@
+# 0.5.6
+
+- Developer command `/rrb demo N` starts any round 1–100 immediately with normal round speed and lanes. `//rrb` is also registered as an alias.
+- Restricted to character name Itsraynna (case and spaces ignored).
+- `/rrb demo off` restores the paused campaign. Demo scores and progress are session-only and never replace the saved campaign; reload also returns to the saved run.
+
+Lua 5.1 tests cover all 100 demo rounds, invalid input, developer restriction and saved-progress isolation. StyLua and faction previews checked. Use /reload after installing.
+
 # 0.5.5
 
 - Increased base chain speed from 24 to 32 path pixels/second: round one is 33% faster.

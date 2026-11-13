@@ -506,3 +506,26 @@ assert(roads==1,'single lane uses one continuous road texture')
 for level in range(1,101):
     assert((ADDON/f'Media/Road{level}.tga').exists())
 print('PASS: high-refresh movement, unchanged speed, launcher alignment and continuous roads')
+
+lua=runtime()
+lua.execute("""
+A.events.OnEvent(A.events,'ADDON_LOADED','RaynnaRuneballs');A.events.OnEvent(A.events,'PLAYER_LOGIN')
+local saved=A.db;local campaign=saved.run;local best=saved.best;local level=saved.level
+SlashCmdList.RAYNNARUNEBALLS('demo 100');assert(A.db==saved,'non-developer cannot jump rounds')
+function UnitName() return 'Its Raynna' end
+for n=1,100 do
+ SlashCmdList.RAYNNARUNEBALLS('demo '..n)
+ assert(A.db~=saved and A.db.run.level==n and not A.db.run.paused)
+ assert((A.db.run.other~=nil)==A.Engine.IsDualLevel(n))
+ assert(RaynnaRuneballsDB==saved and saved.run==campaign and saved.best==best and saved.level==level)
+end
+local demo=A.db
+for _,v in ipairs({'0','101','2.5','nope',''}) do SlashCmdList.RAYNNARUNEBALLS('demo '..v);assert(A.db==demo) end
+A.db.best=999999;A.db.level=100
+SlashCmdList.RAYNNARUNEBALLS('demo off')
+assert(A.db==saved and A.db.run==campaign and saved.best==best and saved.level==level and campaign.paused)
+function UnitName() return 'Itsraynna' end
+SlashCmdList.RAYNNARUNEBALLS('demo 42');assert(A.db.run.level==42)
+SlashCmdList.RAYNNARUNEBALLS('demo off')
+""")
+print('PASS: developer demo all 100 rounds, name restriction, validation and campaign isolation')

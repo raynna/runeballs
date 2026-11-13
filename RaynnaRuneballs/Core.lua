@@ -136,14 +136,53 @@ events:SetScript('OnEvent', function(_, event, name)
         A.CheckFlight()
     end
 end)
+-- Demo state is session-only; the real SavedVariables table keeps campaign data.
+local campaignDB
+local function demo(value)
+    local name = (UnitName('player') or ''):lower():gsub('%s+', '')
+    if name ~= 'itsraynna' then
+        print('Runeballs: demo commands are restricted to Its Raynna.')
+        return
+    end
+    if value == 'off' then
+        if campaignDB then
+            A.Pause()
+            A.db = campaignDB
+            campaignDB = nil
+            A.Open(false)
+        end
+        print('Runeballs: returned to your saved campaign.')
+        return
+    end
+    local level = tonumber(value)
+    if not level or level ~= math.floor(level) or level < 1 or level > A.Engine.MAX_LEVEL then
+        print('Runeballs: /rrb demo 1-100 | /rrb demo off')
+        return
+    end
+    A.Pause()
+    campaignDB = campaignDB or A.db
+    A.db = {
+        options = campaignDB.options,
+        appearance = campaignDB.appearance,
+        best = campaignDB.best,
+        level = level,
+    }
+    A.Engine.NewRun(A.db, level)
+    A.Open(false)
+    A.frame.play:GetScript('OnClick')(A.frame.play)
+    print('Runeballs: DEMO round ' .. level .. '. /rrb demo off restores your campaign.')
+end
 SLASH_RAYNNARUNEBALLS1 = '/rrb'
 SLASH_RAYNNARUNEBALLS2 = '/runeballs'
+SLASH_RAYNNARUNEBALLS3 = '//rrb'
 SlashCmdList.RAYNNARUNEBALLS = function(message)
     if not ready then
         return
     end
     local command, value = (message or ''):lower():match('^(%S*)%s*(.-)$')
-    if command == 'settings' then
+    if command == 'demo' then
+        demo(value)
+    elseif command == 'settings' then
         A.OpenSettings()
     elseif command == 'hide' then
         A.Close()
