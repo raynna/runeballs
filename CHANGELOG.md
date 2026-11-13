@@ -1,3 +1,13 @@
+# 0.5.4
+
+- Replaced overlapping road strips with continuous antialiased artwork generated from all 100 exact routes, including the 12 second lanes. One road texture per lane removes curve seams and reduces UI texture count.
+- Movement now consumes every render interval with small collision-safe steps, avoiding repeated positions above 120 FPS. Optional texture pixel snapping is disabled where supported.
+- Shifted launcher artwork so the loaded marble is centered in its socket, including during recoil.
+- Verified the bundled flight chooser with Runeballs and Peggle alone, without Tower Defense: only the chosen game opens.
+
+Gameplay, high-refresh timing, launcher alignment and flight-chooser tests passed; StyLua and both faction offline previews checked. Actual client smoothness requires in-game confirmation.
+Use /reload after installing; restart WoW if textures remain cached. Saves are preserved.
+
 # 0.5.3
 
 - Rebuilt all six ordinary marble sprites with consistent circular outlines, smooth alpha edges, simpler shading and one soft highlight.

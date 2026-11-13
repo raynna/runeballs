@@ -10,7 +10,6 @@ local guides = {}
 local guideCount = 0
 local roadLevel
 local YS = 0.86
-local accumulator = 0
 local update
 local function move(texture, x, y)
     texture:ClearAllPoints()
@@ -108,22 +107,16 @@ local function drawRoad(level)
     end
     for lane, route in ipairs(routes) do
         local path = E.Path(route)
-        local n = math.ceil(path.length / 7)
-        for i = 1, n do
-            index = index + 1
-            local ax, ay = E.Point(route, (i - 1) * path.length / n)
-            local bx, by = E.Point(route, i * path.length / n)
-            local dx, dy = bx - ax, (by - ay) * YS
-            if not tracks[index] then
-                tracks[index] = A.Art(board, 'Track', 0, 0, 1, 1, 'BACKGROUND')
-            end
-            local t = tracks[index]
-            t:SetParent(lane == 1 and upperRoad or board)
-            move(t, (ax + bx) / 2, (ay + by) / 2)
-            t:SetSize(math.sqrt(dx * dx + dy * dy) + 3, 30)
-            t:SetRotation(-math.atan2(dy, dx))
-            t:Show()
+        index = index + 1
+        if not tracks[index] then
+            tracks[index] = A.Art(board, 'Road' .. route, 380, 215, 816, 430, 'BACKGROUND')
         end
+        local road = tracks[index]
+        road:SetParent(lane == 1 and upperRoad or board)
+        road:SetTexture(A.media .. 'Road' .. route .. '.tga')
+        move(road, 380, 250)
+        road:SetSize(816, 430)
+        road:Show()
         if not entrances[lane] then
             entrances[lane] = A.Art(lane == 1 and upperRoad or board, 'Entry', 0, 0, 60, 60, 'BORDER')
         end
@@ -388,10 +381,13 @@ function A.Draw()
 end
 update = function(_, elapsed)
     clock = clock + math.min(elapsed, 0.1)
-    accumulator = accumulator + math.min(elapsed, 0.1)
-    while accumulator >= 1 / 120 do
-        E.Step(A.db, 1 / 120)
-        accumulator = accumulator - 1 / 120
+    -- Consume the whole render interval, subdividing for swept collision safety.
+    -- No leftover accumulator means high-refresh frames do not repeat positions.
+    local remaining = math.min(elapsed, 0.1)
+    while remaining > 0 do
+        local step = math.min(remaining, 1 / 120)
+        E.Step(A.db, step)
+        remaining = remaining - step
     end
     local x, y = cursor()
     local dx, dy = x - 380, y - 250
@@ -542,7 +538,7 @@ function A.BuildUI()
     board.effectLayer:EnableMouse(false)
     board.exit = A.Art(upperRoad, 'Portal', 0, 0, 60, 60, 'BORDER')
     board.otherExit = A.Art(upperRoad, 'Portal', 0, 0, 60, 60, 'BORDER')
-    board.launcher = A.Art(board, A.Faction() .. 'Launcher', 380, 250 * YS, 104, 104, 'BORDER')
+    board.launcher = A.Art(board, A.Faction() .. 'Launcher', 380, 250 * YS - 5, 104, 104, 'BORDER')
     for i = 1, 8 do
         aimDots[i] = A.Art(board, 'Dot', 0, 0, 5, 5, 'OVERLAY')
         aimDots[i]:Hide()
@@ -620,7 +616,6 @@ function A.BuildUI()
             r = E.NewRun(A.db, r.level, 0)
         end
         r.paused = not r.paused
-        accumulator = 0
         if r.paused then
             A.Pause()
         else

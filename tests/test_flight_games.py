@@ -46,3 +46,26 @@ for order in [('runeballs','towerdefense'),('towerdefense','runeballs')]:
 lua=LuaRuntime(unpack_returned_tuples=True);lua.execute((ROOT/'tests/wow_mock.lua').read_text());lua.execute(source)
 lua.execute("RaynnaFlightGames:Register('only',{name='Only',visible=function() return false end,enabled=function() return true end,open=function() OPENED=true end});RaynnaFlightGames:Begin();assert(OPENED and not RaynnaFlightGames.window)")
 print('PASS: shared chooser, both orders, late Peggle, manual ownership, disabled/combat, landing, standalone')
+
+# Runeballs plus Peggle, with Tower Defense entirely absent.
+lua=LuaRuntime(unpack_returned_tuples=True)
+lua.execute((ROOT/'tests/wow_mock.lua').read_text())
+lua.execute("FLYING=false;function UnitOnTaxi() return FLYING end;function InCombatLockdown() return false end;UISpecialFrames={}")
+lua.execute(source)
+lua.execute("""
+local R=RaynnaFlightGames
+local visible=false
+R:Register('runeballs',{name="Raynna's Runeballs",visible=function() return visible end,enabled=function() return true end,open=function() visible=true end,land=function() visible=false end})
+PeggleData={settings={openFlightStart=true,closeFlightEnd=true}}
+PeggleWindow=CreateFrame('Frame');PeggleWindow:Hide()
+PeggleWindow.HookScript=function(self,event,fn) self.hook=fn end
+R:DiscoverPeggle()
+FLYING=true;R:Check()
+assert(R.window:IsShown() and not visible and not PeggleWindow:IsShown())
+assert(R.providers.runeballs and R.providers.peggle and not R.providers.towerdefense)
+R:Choose('runeballs');assert(visible and not PeggleWindow:IsShown())
+FLYING=false;R:Check();assert(not visible)
+FLYING=true;R:Check();R:Choose('peggle');assert(PeggleWindow:IsShown() and not visible)
+FLYING=false;R:Check();assert(not PeggleWindow:IsShown())
+""")
+print('PASS: Runeballs + Peggle flight selection without Tower Defense')

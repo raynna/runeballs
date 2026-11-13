@@ -481,3 +481,28 @@ r.remaining=0;r.balls={{color=6,d=100}};r.paused=false;r.cooldown=0
 E.Fire(r,100,100);assert(r.next==6,'ammo picker includes pearl and excludes exhausted colours')
 """)
 assert((ADDON/'Media/Ball6.tga').exists())
+
+# Render intervals smaller than a physics tick still advance visible positions.
+lua=runtime()
+lua.execute("""
+A.events.OnEvent(A.events,'ADDON_LOADED','RaynnaRuneballs');A.events.OnEvent(A.events,'PLAYER_LOGIN');A.Open();A.frame.play.OnClick()
+local r=A.db.run;r.remaining=0;r.balls={{color=1,d=200}};r.head=200
+local start=r.head
+for i=1,24 do
+ local previous=r.head
+ A.frame.OnUpdate(A.frame,1/240)
+ assert(r.head>previous,'every high-refresh frame advances the chain')
+end
+assert(math.abs(r.head-start-A.Engine.Speed(r)*.1)<.000001,'render subdivision retains original speed')
+local launcher=A.board.launcher.pointArgs
+local loaded=A.board.loaded.pointArgs
+assert(math.abs(launcher[4]-loaded[4]-5)<.001,'launcher socket aligns with loaded ball')
+local roads=0
+for _,f in ipairs(Frames) do
+ if type(f.texture)=='string' and f.texture:match('Road%d+%.tga$') then roads=roads+1 end
+end
+assert(roads==1,'single lane uses one continuous road texture')
+""")
+for level in range(1,101):
+    assert((ADDON/f'Media/Road{level}.tga').exists())
+print('PASS: high-refresh movement, unchanged speed, launcher alignment and continuous roads')

@@ -24,8 +24,9 @@ def preview(faction,scene):
  routes=[scene['path']]+([scene['other']] if 'other' in scene else [])
  rng=random.Random(scene['level'])
  def road(route):
-  path=[(132+x,155+y*.86) for x,y in route]
-  for width,color in [(31,(9,10,14)),(28,(139,102,45)),(25,(37,34,35)),(22,(17,20,26))]:d.line(path,fill=color,width=width,joint='curve')
+  route_id=scene['level']+(1000 if route is scene.get('other') else 0)
+  road_art=Image.open(MEDIA/f'Road{route_id}.tga').resize((816,430),Image.Resampling.LANCZOS)
+  im.alpha_composite(road_art,(104,155))
  def marbles(points):
   for x,y in points:sprite('Ball'+str(rng.randrange(1,scene['colors']+1)),132+x,155+y*.86,27,27)
  def coverbox(left,top,right,bottom):
@@ -47,7 +48,7 @@ def preview(faction,scene):
   ex,ey=route[-1];px,py=route[-2];angle=-math.degrees(math.atan2((ey-py)*.86,ex-px))
   sprite('Portal',132+ex,155+ey*.86,60,60,angle)
   sprite('PortalSwirl',132+ex,155+ey*.86,28,28)
- sprite(faction+'Launcher',512,370,104,104);sprite('Ball2',512,370,34,34)
+ sprite(faction+'Launcher',512,365,104,104);sprite('Ball2',512,370,34,34)
  sprite('Bomb',580,370,28,28);text('NEXT',580,390,14)
  text('ROUND '+str(scene['level']),258,72,25,True,155);text(scene['name'],259,105,14,False,165)
  width=84 if faction=='Alliance' else 109

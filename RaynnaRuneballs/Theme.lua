@@ -76,6 +76,13 @@ function A.FitText(label, text, width, size, minimum)
 end
 function A.Art(parent, name, x, y, w, h, layer)
     local texture = parent:CreateTexture(nil, layer or 'ARTWORK')
+    -- Preserve subpixel movement on clients that expose texture snapping controls.
+    if texture.SetSnapToPixelGrid then
+        texture:SetSnapToPixelGrid(false)
+    end
+    if texture.SetTexelSnappingBias then
+        texture:SetTexelSnappingBias(0)
+    end
     texture:SetTexture(A.media .. name .. '.tga')
     texture:SetPoint('CENTER', parent, 'TOPLEFT', x, -y)
     texture:SetSize(w, h)

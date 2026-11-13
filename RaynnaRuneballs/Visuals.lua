@@ -72,7 +72,7 @@ function V.Reset()
     recoil, shake = 0, 0
     board:ClearAllPoints()
     board:SetPoint('TOPLEFT', 132, -155)
-    move(board.launcher, 380, 250)
+    move(board.launcher, 380, 250 - 5 / 0.86)
     move(board.loaded, 380, 250)
     for _, list in ipairs({ trail, pops, embers, orbit, holeSparks }) do
         for _, t in ipairs(list) do
@@ -184,7 +184,7 @@ function V.Draw(r, active)
     move(arrow, 380 + aimX * 49, 250 + aimY * 49)
     arrow:SetRotation(-math.atan2(aimY, aimX) - math.pi / 2)
     local kick = moving and recoil / 0.14 * 4 or 0
-    move(board.launcher, 380 - aimX * kick, 250 - aimY * kick)
+    move(board.launcher, 380 - aimX * kick, 250 - aimY * kick - 5 / 0.86)
     move(board.loaded, 380 - aimX * kick, 250 - aimY * kick)
     muzzle:SetShown(moving and recoil > 0)
     if moving and recoil > 0 then
