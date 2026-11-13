@@ -9,6 +9,7 @@ local aimX, aimY = 0, -1
 local pressure
 local trail, pops, embers, orbit = {}, {}, {}, {}
 local glow, arrow, muzzle, specialGlow
+local holeSparks = {}
 local function move(t, x, y)
     t:ClearAllPoints()
     t:SetPoint('CENTER', board, 'TOPLEFT', x, -y * 0.86)
@@ -37,6 +38,11 @@ function V.Build(owner, field)
         orbit[i]:SetVertexColor(0.7, 0.4, 1)
         orbit[i]:Hide()
     end
+    for i = 1, 16 do
+        holeSparks[i] = A.Art(board, 'Spark', 0, 0, 10, 10, 'OVERLAY')
+        holeSparks[i]:SetBlendMode('ADD')
+        holeSparks[i]:Hide()
+    end
     for i = 1, 32 do
         pops[i] = A.Art(board, 'Ball1', 0, 0, 27, 27, 'ARTWORK')
         pops[i]:Hide()
@@ -51,7 +57,7 @@ function V.Reset()
     board:SetPoint('TOPLEFT', 132, -155)
     move(board.launcher, 380, 250)
     move(board.loaded, 380, 250)
-    for _, list in ipairs({ trail, pops, embers, orbit }) do
+    for _, list in ipairs({ trail, pops, embers, orbit, holeSparks }) do
         for _, t in ipairs(list) do
             t:Hide()
         end
@@ -102,6 +108,22 @@ function V.Tick(dt, r)
     board:SetPoint('TOPLEFT', 132 + offset, -155)
 end
 function V.Draw(r, active)
+    for i, spark in ipairs(holeSparks) do
+        local lane = i <= 8 and r or r.other
+        local visible = lane and not r.paused and not A.MotionReduced() and not (r.ending and r.ending.won)
+        spark:SetShown(not not visible)
+        if visible then
+            local x, y = A.Engine.Point(A.Engine.Route(lane), A.Engine.Path(A.Engine.Route(lane)).length)
+            local draining = r.ending and r.ending.phase == 'drain'
+            local phase = (timer * (draining and 1.3 or 0.22) + (i % 8) / 8) % 1
+            local radius = draining and (43 * (1 - phase)) or 33 + math.sin(timer * 2 + i) * 3
+            local angle = phase * math.pi * 2
+            move(spark, x + math.cos(angle) * radius, y + math.sin(angle) * radius / 0.86)
+            spark:SetAlpha(draining and (1 - phase) * 0.8 or 0.35)
+            spark:SetVertexColor(0.45, 0.65, 1)
+            spark:SetSize(draining and 12 or 7, draining and 12 or 7)
+        end
+    end
     local moving = not A.MotionReduced() and not r.paused and r.status == 'playing'
     glow:SetAlpha(moving and (0.5 + math.sin(timer * 2) * 0.15) or 0.45)
     arrow:SetShown(r.status == 'playing')

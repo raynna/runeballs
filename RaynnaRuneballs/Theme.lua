@@ -18,7 +18,7 @@ end
 function A.Label(parent, text, x, y, size, style)
     local label = parent:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
     label.fontPath = style == 'body' and A.Theme.body or A.Theme.heading
-    label.fontFlags = style == 'body' and 'OUTLINE' or 'THICKOUTLINE'
+    label.fontFlags = 'OUTLINE'
     label.fontSize = size or 16
     if label:SetFont(label.fontPath, label.fontSize, label.fontFlags) == false then
         label.fontPath = 'Fonts\\FRIZQT__.TTF'
@@ -28,77 +28,51 @@ function A.Label(parent, text, x, y, size, style)
     label:SetShadowOffset(1.5, -2)
     label:SetPoint('TOPLEFT', x, y)
     label:SetTextColor(unpack(A.Theme.cream))
+    label:SetHeight((size or 16) + 8)
+    label:SetJustifyH('LEFT')
+    label:SetJustifyV('MIDDLE')
+    label:SetWordWrap(false)
     label:SetText(text)
     return label
 end
--- Gold highlights are live font glyphs in clipped bands, never rasterized text.
--- The base glyph supplies its dark outline and shadow below the highlight bands.
+-- One native font string per value: avoids clipping/baseline differences
+-- between layered font strings on the Forever client.
 function A.GoldLabel(parent, text, x, y, size, width)
     local label = A.Label(parent, text, x, y, size)
     label:SetWidth(width)
+    label:SetHeight(size + 8)
     label:SetJustifyH('CENTER')
     label:SetTextColor(unpack(A.Theme.gold))
-    label.goldBands = {}
-    local colors = { { 1, 0.96, 0.67 }, { 1, 0.88, 0.38 }, { 1, 0.79, 0.19 }, { 0.97, 0.64, 0.09 } }
-    for i, color in ipairs(colors) do
-        local clip = CreateFrame('Frame', nil, parent)
-        clip:EnableMouse(false)
-        clip:SetClipsChildren(true)
-        clip:SetPoint('TOPLEFT', label, 'TOPLEFT', 0, -(i - 1) * size / 4)
-        clip:SetPoint('TOPRIGHT', label, 'TOPRIGHT', 0, -(i - 1) * size / 4)
-        clip:SetHeight(size / 4)
-        local ink = clip:CreateFontString(nil, 'OVERLAY')
-        ink:SetAllPoints(label)
-        ink:SetFont(label.fontPath, size, label.fontFlags)
-        ink:SetJustifyH('CENTER')
-        ink:SetTextColor(unpack(color))
-        ink:SetText(text)
-        label.goldBands[i] = { clip = clip, ink = ink }
-    end
-    local setText = label.SetText
-    label.SetText = function(self, value)
-        setText(self, value)
-        for _, band in ipairs(self.goldBands) do
-            band.ink:SetText(value)
-        end
-    end
     return label
 end
 function A.FitText(label, text, width, size, minimum)
-    if label.lastFitText == text then
+    local key = text .. ':' .. width .. ':' .. size
+    if label.lastFitText == key then
         return
     end
-    label.lastFitText = text
-    label:SetWidth(0)
+    label.lastFitText = key
+    -- Explicit height and a generous measurement width prevent a zero-width
+    -- font string from retaining a clipped/wrapped layout after measurement.
+    label:SetWidth(4096)
+    label:SetHeight(size + 8)
     label:SetWordWrap(false)
     label:SetText(text)
     local chosen = size
-    label:SetFont(label.fontPath, chosen, label.fontFlags)
-    local measured = label:GetStringWidth()
-    while type(measured) == 'number' and measured > width and chosen > (minimum or 12) do
-        chosen = chosen - 1
+    local function measure()
         label:SetFont(label.fontPath, chosen, label.fontFlags)
-        measured = label:GetStringWidth()
-    end
-    if type(measured) == 'number' and measured > width then
-        local shortened = text
-        while #shortened > 3 and measured > width do
-            shortened = shortened:sub(1, -2)
-            label:SetText(shortened .. '...')
-            measured = label:GetStringWidth()
+        local value = label.GetUnboundedStringWidth and label:GetUnboundedStringWidth()
+        if type(value) ~= 'number' then
+            value = label:GetStringWidth()
         end
+        return type(value) == 'number' and value or 0
+    end
+    local measured = measure()
+    while measured > width - 6 and chosen > (minimum or 12) do
+        chosen = chosen - 1
+        measured = measure()
     end
     label:SetWidth(width)
     label.fontSize = chosen
-    if label.goldBands then
-        for i, band in ipairs(label.goldBands) do
-            band.clip:ClearAllPoints()
-            band.clip:SetPoint('TOPLEFT', label, 'TOPLEFT', 0, -(i - 1) * chosen / 4)
-            band.clip:SetPoint('TOPRIGHT', label, 'TOPRIGHT', 0, -(i - 1) * chosen / 4)
-            band.clip:SetHeight(chosen / 4)
-            band.ink:SetFont(label.fontPath, chosen, label.fontFlags)
-        end
-    end
 end
 function A.Art(parent, name, x, y, w, h, layer)
     local texture = parent:CreateTexture(nil, layer or 'ARTWORK')
@@ -136,14 +110,15 @@ function A.Button(parent, text, x, y, width, height, icon, callback)
     b.visual = visual
     local art = A.Art(visual, A.Faction() .. 'Button', width / 2, height / 2, width, height)
     local glyph = icon and A.Art(visual, icon, 25, height / 2, 24, 24, 'OVERLAY')
-    local label = A.Label(visual, text, icon and 43 or 12, 0, 20)
+    local label = A.Label(visual, text, icon and 39 or 14, 0, 20)
     label:ClearAllPoints()
-    label:SetPoint('LEFT', icon and 43 or 12, 0)
+    label:SetPoint('LEFT', icon and 39 or 14, 0)
     label:SetJustifyH('CENTER')
-    label:SetWidth(width - (icon and 54 or 24))
+    label:SetWidth(width - (icon and 54 or 28))
     b.SetText = function(_, value)
-        A.FitText(label, value, width - (icon and 54 or 24), 20, 14)
+        A.FitText(label, value, width - (icon and 54 or 28), 16, 10)
     end
+    b.label = label
     b.SetIcon = function(_, name)
         if glyph then
             glyph:SetTexture(A.media .. name .. '.tga')

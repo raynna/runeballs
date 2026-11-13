@@ -1,3 +1,16 @@
+# 0.4.1
+
+- Clear, perpendicular crossings with the lower road and marbles hidden behind matching stone background sections, plus subtle buried-route guides.
+- Two mirrored lanes of exactly equal length, with two crossings and exits more than 450 board units apart.
+- Covered balls cannot be hit; partial marble silhouettes disappear naturally behind foreground stone.
+- Larger simple sinkholes with a road-shaped opening aligned to the path, subtle rim effects and defeat suction.
+- Single-layer gold text, explicit text bounds and smaller button labels fix clipped/overlapping typography.
+- Ordinary ball hits use a quiet native UI click instead of a spell impact.
+
+Validation: Lua 5.1 gameplay/UI mock tests, tunnel collision/equal-length checks,
+shared flight chooser tests, StyLua and offline faction previews. In-game layout
+verification is still needed after reload.
+
 # 0.4.0
 
 - Bold cartoon fonts, gold numbers, new control icons, faction launchers and buttons.

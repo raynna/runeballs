@@ -99,3 +99,22 @@ for i,name in enumerate(('Entrance','Bridge')):
     tile.thumbnail((120,120),Image.Resampling.LANCZOS)
     canvas=Image.new('RGBA',(128,128));canvas.alpha_composite(tile,((128-tile.width)//2,(128-tile.height)//2))
     canvas.save(out/(name+'.tga'))
+
+# 0.4.1: flat cartoon covers, unmistakable bridge deck, round losing sinkhole.
+simple=Image.open(src/'CrossingsSimple.png').convert('RGBA')
+xs=cuts(simple,0,3)
+for i,name in enumerate(('Bridge','Entrance','Portal')):
+    tile=simple.crop((xs[i],0,xs[i+1],simple.height))
+    tile=tile.crop(tile.getchannel('A').point(lambda a:255 if a>24 else 0).getbbox())
+    size=(256,256) if name!='Entrance' else (256,128)
+    # Fill known runtime dimensions; entrance preserves its long low silhouette.
+    if name=='Bridge': tile=tile.resize((248,248),Image.Resampling.LANCZOS)
+    elif name=='Portal': tile=tile.resize((248,248),Image.Resampling.LANCZOS)
+    else: tile=tile.resize((248,100),Image.Resampling.LANCZOS)
+    canvas=Image.new('RGBA',size)
+    canvas.alpha_composite(tile,((size[0]-tile.width)//2,(size[1]-tile.height)//2))
+    canvas.save(out/(name+'.tga'))
+print('Built simple covered crossings and round sinkhole.')
+
+# Preserve the source canvas center: rotation pivots at the pit, not its road stub.
+Image.open(src/'ExitMouth.png').convert('RGBA').resize((256,256),Image.Resampling.LANCZOS).save(out/'Portal.tga')

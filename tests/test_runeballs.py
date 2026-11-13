@@ -274,3 +274,55 @@ for _,secondary in ipairs({false,true}) do
 end
 """)
 print('PASS: edge entrances, dual chains, bridges, both loss lanes, win and paused cinematic reload')
+
+lua=runtime()
+lua.execute("""
+local E=A.Engine
+for level=6,58,4 do
+ local a,b=E.Path(level),E.Path(level+1000)
+ assert(math.abs(a.length-b.length)<0.00001,'identical lane lengths')
+ local ax,ay=E.Point(level,a.length);local bx,by=E.Point(level+1000,b.length)
+ assert((ax-bx)^2+(ay-by)^2>350^2,'widely separated exits')
+ local crosses=E.Crossings(level)
+ assert(#crosses==2,'two clear crossings with long exposed runs')
+ for _,c in ipairs(crosses) do
+  assert(math.abs(math.sin(c.angle-c.underAngle))>0.97,'near-right-angle intersection')
+  assert(E.Hidden({level=level,route=level+1000},c.under-65))
+  assert(E.Hidden({level=level,route=level+1000},c.under+65))
+  assert(not E.Hidden({level=level,route=level+1000},c.under+115))
+ end
+end
+local db={};E.Init(db)
+local r=E.NewRun(db,6);r.paused=false
+local c=E.Crossings(6)[1]
+r.balls={{color=1,d=200}};r.remaining=0
+r.other.balls={{color=2,d=c.under}};r.other.remaining=0
+local x,y=E.Point(E.Route(r.other),c.under)
+r.shot={x=x,y=y,vx=1,vy=1,color=1,kind='Bomb'}
+E.Step(db,0.01)
+assert(r.shot and #r.other.balls==1,'shot cannot hit a ball in the covered tunnel')
+r=E.NewRun(db,1);r.paused=false;r.remaining=0;r.balls={{color=1,d=40}}
+x,y=E.Point(1,40);r.shot={x=x,y=y,vx=1,vy=1,color=2}
+E.Step(db,0.01);assert(r.shot and #r.balls==1,'entrance roof shields balls too')
+""")
+print('PASS: clear perpendicular crossings and long tunnel hit protection')
+
+
+lua=runtime()
+lua.execute("""
+local before=#Frames
+local label=A.GoldLabel(UIParent,'',0,0,28,119)
+assert(#Frames==before+1 and not label.goldBands,'single score glyph layer')
+label.SetFont=function(self,path,size,flags) self.measuredSize=size end
+label.GetUnboundedStringWidth=function(self) return #self:GetText()*self.measuredSize*0.65 end
+A.FitText(label,'99,999,999',119,28,10)
+assert(label:GetText()=='99,999,999' and label:GetHeight()>28)
+assert(label:GetUnboundedStringWidth()<=113 and label.fontSize<28)
+local button=A.Button(UIParent,'SETTINGS',0,0,150,57,'SettingsIcon',function() end)
+assert(button.label:GetText()=='SETTINGS' and button.label:GetHeight()>0)
+A.db={options={}}
+PlaySoundFile=function() error('ordinary hit must not use a spell file') end
+PlaySound=function(id) HIT_SOUND=id end
+A.GameSound('Hit');assert(HIT_SOUND==856)
+""")
+print('PASS: single-layer scores, bounded text fitting and subtle native hit sound')

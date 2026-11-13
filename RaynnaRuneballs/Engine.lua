@@ -77,48 +77,47 @@ function E.Path(level)
         p[#p + 1] = { x = x, y = y, d = p.length }
     end
     local controls = earlyRoutes[level]
-    if level >= 1000 then
-        controls = {
-            { 760, 400 },
-            { 600, 400 },
-            { 450, 430 },
-            { 300, 400 },
-            { 100, 420 },
-            { 50, 280 },
-            { 180, 170 },
-            { 340, 100 },
-            { 500, 100 },
-            { 650, 180 },
-            { 620, 270 },
-            { 520, 320 },
-        }
-    elseif level >= 6 and level % 4 == 2 then
-        controls = {
-            { 0, 100 },
-            { 150, 100 },
-            { 300, 80 },
-            { 520, 110 },
-            { 680, 80 },
-            { 720, 210 },
-            { 600, 320 },
-            { 440, 380 },
-            { 250, 380 },
-            { 100, 300 },
-            { 120, 200 },
-            { 250, 150 },
-        }
-    end
-    if controls and (level >= 1000 or (level >= 6 and level % 4 == 2)) then
-        local changed = {}
-        for i, point in ipairs(controls) do
-            changed[i] = { point[1], point[2] }
-            if i > 1 then
-                changed[i][2] = point[2] + math.sin((level % 1000) * 0.61 + i) * 10
+    if level >= 1000 or (level >= 6 and level % 4 == 2) then
+        -- A rigid half-turn preserves every segment length exactly. The exits
+        -- are on opposite sides of the launcher, not beside one another.
+        local round = level % 1000
+        local top = 120 + math.sin(round * 0.61) * 4
+        local bottom = 420 + math.cos(round * 0.53) * 4
+        controls = { { 0, top }, { 620, top }, { 620, bottom }, { 180, bottom }, { 180, 445 }, { 260, 445 } }
+        if level >= 1000 then
+            for _, point in ipairs(controls) do
+                point[1], point[2] = 760 - point[1], 500 - point[2]
             end
         end
-        controls = changed
     end
-    if level == 1 then
+    if level >= 1000 or (level >= 6 and level % 4 == 2) then
+        local function lineTo(x, y)
+            local last = p[#p]
+            local count = math.max(1, math.ceil(math.sqrt((x - last.x) ^ 2 + (y - last.y) ^ 2) / 4))
+            local sx, sy = last.x, last.y
+            for i = 1, count do
+                add(sx + (x - sx) * i / count, sy + (y - sy) * i / count)
+            end
+        end
+        add(controls[1][1], controls[1][2])
+        for i = 2, #controls - 1 do
+            local a, b, c = controls[i - 1], controls[i], controls[i + 1]
+            local dx, dy = b[1] - a[1], b[2] - a[2]
+            local len = math.sqrt(dx * dx + dy * dy)
+            local ex, ey = c[1] - b[1], c[2] - b[2]
+            local out = math.sqrt(ex * ex + ey * ey)
+            local radius = math.min(16, len * 0.4, out * 0.4)
+            local px, py = b[1] - dx / len * radius, b[2] - dy / len * radius
+            local qx, qy = b[1] + ex / out * radius, b[2] + ey / out * radius
+            lineTo(px, py)
+            for step = 1, 12 do
+                local t = step / 12
+                local u = 1 - t
+                add(u * u * px + 2 * u * t * b[1] + t * t * qx, u * u * py + 2 * u * t * b[2] + t * t * qy)
+            end
+        end
+        lineTo(controls[#controls][1], controls[#controls][2])
+    elseif level == 1 then
         -- Compensate for the board's 0.86 vertical display scale: this is a
         -- circular inward spiral on screen, rather than an elliptical loop.
         for i = 0, 900 do
@@ -788,6 +787,8 @@ function E.Crossings(level)
                             over = d1 + 20 * t,
                             under = d2 + 20 * u,
                             angle = math.atan2(ay * 0.86, ax),
+                            underAngle = math.atan2(by * 0.86, bx),
+                            level = level,
                         }
                     end
                 end
@@ -796,12 +797,39 @@ function E.Crossings(level)
     end
     return crossings
 end
+function E.CoverBounds(cross)
+    if cross.bounds then
+        return unpack(cross.bounds)
+    end
+    local left, top, right, bottom = math.huge, math.huge, -math.huge, -math.huge
+    for offset = -76, 76, 4 do
+        local x, y = E.Point(cross.level + 1000, cross.under + offset)
+        y = y * 0.86
+        left, top, right, bottom =
+            math.min(left, x), math.min(top, y), math.max(right, x), math.max(bottom, y)
+    end
+    cross.bounds = { left - 18, top - 18, right - left + 36, bottom - top + 36 }
+    return unpack(cross.bounds)
+end
 function E.Hidden(run, distance)
+    local route = E.Route(run)
+    local x, y = E.Point(route, distance)
+    local sx, sy = E.Point(route, 0)
+    local tx, ty = E.Point(route, 88)
+    if
+        x >= math.min(sx, tx) - 18
+        and x <= math.max(sx, tx) + 18
+        and y * 0.86 >= math.min(sy, ty) * 0.86 - 18
+        and y * 0.86 <= math.max(sy, ty) * 0.86 + 18
+    then
+        return true
+    end
     if not run.route then
         return false
     end
     for _, cross in ipairs(E.Crossings(run.level)) do
-        if math.abs(distance - cross.under) < 25 then
+        local left, top, width, height = E.CoverBounds(cross)
+        if x >= left and x <= left + width and y * 0.86 >= top and y * 0.86 <= top + height then
             return true
         end
     end

@@ -11,7 +11,7 @@ no extracted client audio files are bundled. Spell sound FileDataIDs are
 from wowdev's verified listfile release 202611122246:
 https://github.com/wowdev/wow-listfile/releases/tag/202611122246
 Shoot: SOUNDKIT IG_MAINMENU_OPTION_CHECKBOX_ON (856), quiet UI tick.
-Hit: 568461 sound/spells/fireballimpacta.ogg
+Hit: SOUNDKIT IG_MAINMENU_OPTION_CHECKBOX_ON (856), quiet UI tick.
 Match: 568678 sound/spells/arcaneexplosion.ogg
 Bomb: 568528 sound/spells/smallexplosions_generic_01.ogg
 Frost: 569378 sound/spells/frostnova.ogg
@@ -23,3 +23,7 @@ Open Font License 1.1. Both license notices are in Media/Fonts. RuneballsLabels.
 is a renamed static weight-800 instance of Baloo 2. The variable source is retained
 in ArtSource/Fonts. Font sources: https://github.com/google/fonts/tree/main/ofl/lilitaone
 and https://github.com/google/fonts/tree/main/ofl/baloo2
+
+0.4.1 sinkhole: ExitMouth.png, built-in image_gen. Exact prompt in
+ArtSource/ExitMouth-PROMPT.txt. Crossings themselves use native texture
+layering and matching background UVs; no bridge/tunnel prop is used.

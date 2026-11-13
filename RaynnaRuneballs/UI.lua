@@ -5,6 +5,9 @@ local balls, aimDots, tracks, effects, fragments = {}, {}, {}, {}, {}
 local active = {}
 local clock = 0
 local entrances, bridges = {}, {}
+local covers, upperRoad, entryCovers
+local guides = {}
+local guideCount = 0
 local roadLevel
 local YS = 0.86
 local accumulator = 0
@@ -41,12 +44,59 @@ function A.Pause()
         A.Visuals.Reset()
     end
 end
+-- Copy the exact background UV region over the lower lane. The upper road
+-- has its own draw frame, so crossing geometry stays continuous above it.
+local function cover(pool, index, parent, left, top, width, height)
+    local patch = pool[index]
+    if not patch then
+        patch = parent:CreateTexture(nil, 'ARTWORK')
+        pool[index] = patch
+    end
+    patch:SetTexture(A.media .. A.Faction() .. 'Frame.tga')
+    patch:ClearAllPoints()
+    patch:SetPoint('TOPLEFT', board, 'TOPLEFT', left, -top)
+    patch:SetSize(width, height)
+    patch:SetTexCoord(
+        (132 + left) / 1024,
+        (132 + left + width) / 1024,
+        (155 + top) / (2048 / 3),
+        (155 + top + height) / (2048 / 3)
+    )
+    patch:SetVertexColor(1, 1, 1, 1)
+    patch:Show()
+end
+local function coveredGuide(route, from, to, parent)
+    for distance = from, to, 14 do
+        guideCount = guideCount + 1
+        local dash = guides[guideCount]
+        if not dash then
+            dash = parent:CreateTexture(nil, 'OVERLAY')
+            dash:SetTexture('Interface\\Buttons\\WHITE8X8')
+            guides[guideCount] = dash
+        end
+        dash:SetParent(parent)
+        local x, y = E.Point(route, distance)
+        local nx, ny = E.Point(route, distance + 4)
+        move(dash, x, y)
+        dash:SetSize(6, 2)
+        dash:SetRotation(-math.atan2((ny - y) * YS, nx - x))
+        dash:SetVertexColor(0.68, 0.54, 0.35, 0.55)
+        dash:Show()
+    end
+end
+local function exitAngle(lane)
+    local length = E.Path(E.Route(lane)).length
+    local x, y = E.Point(E.Route(lane), length)
+    local px, py = E.Point(E.Route(lane), length - 10)
+    return -math.atan2((y - py) * YS, x - px)
+end
 local function drawRoad(level)
     if roadLevel == level then
         return
     end
     roadLevel = level
     local index = 0
+    guideCount = 0
     local routes = { level }
     if A.db.run.other then
         routes[2] = E.Route(A.db.run.other)
@@ -63,16 +113,27 @@ local function drawRoad(level)
                 tracks[index] = A.Art(board, 'Track', 0, 0, 1, 1, 'BACKGROUND')
             end
             local t = tracks[index]
+            t:SetParent(lane == 1 and upperRoad or board)
             move(t, (ax + bx) / 2, (ay + by) / 2)
             t:SetSize(math.sqrt(dx * dx + dy * dy) + 3, 30)
             t:SetRotation(-math.atan2(dy, dx))
             t:Show()
         end
-        if not entrances[lane] then
-            entrances[lane] = A.Art(board, 'Entrance', 0, 0, 53, 53, 'OVERLAY')
-        end
-        move(entrances[lane], E.Point(route, 6))
-        entrances[lane]:Show()
+        local sx, sy = E.Point(route, 0)
+        local tx, ty = E.Point(route, 88)
+        local left, top = math.min(sx, tx) - 18, math.min(sy, ty) * YS - 18
+        cover(
+            entrances,
+            lane,
+            lane == 1 and entryCovers or covers,
+            left,
+            top,
+            math.abs(tx - sx) + 36,
+            math.abs(ty - sy) * YS + 36
+        )
+    end
+    for lane, route in ipairs(routes) do
+        coveredGuide(route, 8, 80, lane == 1 and entryCovers or covers)
     end
     for i = #routes + 1, #entrances do
         entrances[i]:Hide()
@@ -82,12 +143,11 @@ local function drawRoad(level)
     end
     local crossing = A.db.run.other and E.Crossings(level) or {}
     for i, cross in ipairs(crossing) do
-        if not bridges[i] then
-            bridges[i] = A.Art(board, 'Bridge', 0, 0, 64, 64, 'BORDER')
-        end
-        move(bridges[i], cross.x, cross.y)
-        bridges[i]:SetRotation(-cross.angle - math.pi / 2)
-        bridges[i]:Show()
+        cover(bridges, i, covers, E.CoverBounds(cross))
+        coveredGuide(level + 1000, cross.under - 72, cross.under + 72, covers)
+    end
+    for i = guideCount + 1, #guides do
+        guides[i]:Hide()
     end
     for i = #crossing + 1, #bridges do
         bridges[i]:Hide()
@@ -113,9 +173,10 @@ function A.Draw()
         for _, b in ipairs(lane.balls) do
             visualIndex = visualIndex + 1
             local texture = ball(visualIndex)
+            texture:SetParent(lane == r and upperRoad or board)
             texture:SetTexture(shotArt(b.color))
             move(texture, E.Point(E.Route(lane), b.d))
-            texture:SetShown(b.d >= 0 and not E.Hidden(lane, b.d))
+            texture:SetShown(b.d >= 0)
             local shrink = 1
             if lane.ending and lane.ending.phase == 'drain' then
                 shrink = math.max(0.05, math.min(1, (E.Path(E.Route(lane)).length + 18 - b.d) / 38))
@@ -130,7 +191,16 @@ function A.Draw()
     board.otherExit:SetShown(r.other ~= nil)
     if r.other then
         move(board.otherExit, E.Point(E.Route(r.other), E.Path(E.Route(r.other)).length))
-        board.otherExit:SetRotation(A.MotionReduced() and 0 or -clock * 0.8)
+        board.otherExit:SetRotation(exitAngle(r.other))
+        board.otherExit:SetSize(112, 112)
+        board.otherExit:SetAlpha(1)
+        if r.ending and r.ending.won then
+            local seal = math.max(0, 1 - r.ending.age / 1.1)
+            board.otherExit:SetSize(math.max(1, 112 * seal), math.max(1, 112 * seal))
+            board.otherExit:SetAlpha(seal)
+        elseif r.ending and r.ending.phase == 'drain' then
+            board.otherExit:SetSize(125, 125)
+        end
     end
     board.loaded:SetTexture(shotArt(r.loaded, r.loadedKind))
     board.next:SetTexture(shotArt(r.next, r.nextKind))
@@ -143,26 +213,26 @@ function A.Draw()
     move(board.exit, ex, ey)
     local danger = r.head > E.Path(r.level).length - 240
     board.exit:SetVertexColor(1, danger and 0.35 or 1, danger and 0.35 or 1)
-    board.exit:SetRotation(A.MotionReduced() and 0 or clock * 0.8)
+    board.exit:SetRotation(exitAngle(r))
     board.exit:SetSize(
-        49 + (A.MotionReduced() and 0 or math.sin(clock * (danger and 10 or 3)) * 4),
-        49 + (A.MotionReduced() and 0 or math.sin(clock * (danger and 10 or 3)) * 4)
+        112 + (A.MotionReduced() and 0 or math.sin(clock * (danger and 10 or 3)) * 4),
+        112 + (A.MotionReduced() and 0 or math.sin(clock * (danger and 10 or 3)) * 4)
     )
     board.exit:SetAlpha(1)
     if r.ending then
         if r.ending.won then
             local seal = math.max(0, 1 - r.ending.age / 1.1)
-            board.exit:SetSize(math.max(1, 54 * seal), math.max(1, 54 * seal))
+            board.exit:SetSize(math.max(1, 112 * seal), math.max(1, 112 * seal))
             board.exit:SetAlpha(seal)
         elseif r.ending.phase == 'drain' then
-            board.exit:SetRotation(A.MotionReduced() and 0 or clock * 5)
-            board.exit:SetSize(62, 62)
+            board.exit:SetRotation(exitAngle(r))
+            board.exit:SetSize(125, 125)
         end
     end
-    A.FitText(frame.stats, 'ROUND ' .. r.level, 155, 27, 18)
-    A.FitText(frame.mapName, E.MapName(r.level), 165, 15, 12)
-    A.FitText(frame.score, A.Number(r.score), 119, 30, 16)
-    A.FitText(frame.best, A.Number(A.db.best), 119, 30, 16)
+    A.FitText(frame.stats, 'ROUND ' .. r.level, 155, 25, 16)
+    A.FitText(frame.mapName, E.MapName(r.level), 165, 14, 10)
+    A.FitText(frame.score, A.Number(r.score), 119, 28, 13)
+    A.FitText(frame.best, A.Number(A.db.best), 119, 28, 13)
     frame.progress:SetText(tostring(E.Remaining(r)))
     local pressure = E.Pressure(r)
     frame.pressure:SetValue(A.Visuals.Pressure(pressure))
@@ -222,7 +292,7 @@ function A.Draw()
             message = 'Portal sealed'
         end
     end
-    A.FitText(frame.message, message:upper(), 213, 22, 17)
+    A.FitText(frame.message, message:upper(), 213, 20, 13)
     local resultVisible = r.status ~= 'playing' and (not r.ending or r.ending.phase == 'result')
     frame.result:SetShown(resultVisible)
     if resultVisible then
@@ -413,23 +483,44 @@ function A.BuildUI()
         A.db.options.position = { point = point, relative = relative, x = x, y = y }
     end)
     A.Button(frame, 'X', 972, 10, 40, 38, nil, A.Close)
-    frame.stats = A.GoldLabel(frame, '', 181, -73, 27, 155)
-    frame.mapName = A.Label(frame, '', 177, -105, 15, 'body')
+    frame.stats = A.GoldLabel(frame, '', 181, -68, 25, 155)
+    frame.mapName = A.Label(frame, '', 177, -101, 14, 'body')
     frame.mapName:SetWidth(165)
     frame.mapName:SetJustifyH('CENTER')
-    A.Art(frame, 'Trophy', 706, 82, 22, 22, 'OVERLAY')
-    A.Art(frame, 'Crown', 835, 82, 22, 22, 'OVERLAY')
-    A.Label(frame, 'SCORE', 721, -72, 16)
-    A.Label(frame, 'BEST', 850, -72, 16)
-    frame.score = A.GoldLabel(frame, '', 684, -96, 30, 119)
-    frame.best = A.GoldLabel(frame, '', 813, -96, 30, 119)
+    frame.mapName:SetHeight(24)
+    A.Art(frame, 'Trophy', 703, 80, 19, 19, 'OVERLAY')
+    A.Art(frame, 'Crown', 832, 80, 19, 19, 'OVERLAY')
+    local scoreHeading = A.Label(frame, 'SCORE', 715, -68, 15)
+    scoreHeading:SetWidth(80)
+    scoreHeading:SetJustifyH('CENTER')
+    local bestHeading = A.Label(frame, 'BEST', 844, -68, 15)
+    bestHeading:SetWidth(80)
+    bestHeading:SetJustifyH('CENTER')
+    frame.score = A.GoldLabel(frame, '', 684, -92, 28, 119)
+    frame.best = A.GoldLabel(frame, '', 813, -92, 28, 119)
     board = CreateFrame('Frame', nil, frame)
     A.board = board
     board:SetPoint('TOPLEFT', 132, -155)
     board:SetSize(760, 430)
     board:EnableMouse(true)
-    board.exit = A.Art(board, 'Portal', 0, 0, 54, 54, 'BORDER')
-    board.otherExit = A.Art(board, 'Portal', 0, 0, 54, 54, 'BORDER')
+    local stone = board:CreateTexture(nil, 'BACKGROUND')
+    stone:SetAllPoints(board)
+    stone:SetTexture(A.media .. A.Faction() .. 'Frame.tga')
+    stone:SetTexCoord(132 / 1024, 892 / 1024, 155 / (2048 / 3), 585 / (2048 / 3))
+    covers = CreateFrame('Frame', nil, board)
+    covers:SetAllPoints(board)
+    covers:SetFrameLevel(board:GetFrameLevel() + 1)
+    covers:EnableMouse(false)
+    upperRoad = CreateFrame('Frame', nil, board)
+    upperRoad:SetAllPoints(board)
+    upperRoad:SetFrameLevel(board:GetFrameLevel() + 2)
+    upperRoad:EnableMouse(false)
+    entryCovers = CreateFrame('Frame', nil, board)
+    entryCovers:SetAllPoints(board)
+    entryCovers:SetFrameLevel(board:GetFrameLevel() + 3)
+    entryCovers:EnableMouse(false)
+    board.exit = A.Art(upperRoad, 'Portal', 0, 0, 112, 112, 'BORDER')
+    board.otherExit = A.Art(upperRoad, 'Portal', 0, 0, 112, 112, 'BORDER')
     board.launcher = A.Art(board, A.Faction() .. 'Launcher', 380, 250 * YS, 104, 104, 'BORDER')
     for i = 1, 8 do
         aimDots[i] = A.Art(board, 'Dot', 0, 0, 5, 5, 'OVERLAY')
@@ -442,6 +533,10 @@ function A.BuildUI()
     nextLabel:SetPoint('TOP', board.next, 'BOTTOM', 0, -3)
     board.shot = A.Art(board, 'Ball1', 0, 0, 27, 27, 'OVERLAY')
     board.combo = A.Label(board, '', 0, 0, 25)
+    board.combo:SetHeight(66)
+    board.combo:SetWidth(360)
+    board.combo:SetJustifyH('CENTER')
+    board.combo:SetWordWrap(true)
     board.combo:SetTextColor(unpack(A.Theme.gold))
     board:SetScript('OnMouseDown', function(_, which)
         if which == 'RightButton' then
@@ -452,7 +547,7 @@ function A.BuildUI()
         A.Draw()
     end)
     local threat = A.Panel(frame, 132, 590, 760, 27)
-    frame.pressureLabel = A.Label(threat, 'PORTAL THREAT', 12, -5, 14)
+    frame.pressureLabel = A.Label(threat, 'PORTAL THREAT', 12, -2, 13)
     frame.pressure = CreateFrame('StatusBar', nil, threat)
     frame.pressure:SetPoint('TOPLEFT', 160, -8)
     frame.pressure:SetSize(585, 11)
@@ -464,14 +559,18 @@ function A.BuildUI()
     rail:SetVertexColor(0.05, 0.03, 0.06, 1)
     local quest = A.Panel(frame, 35, 625, 290, 83)
     A.Art(quest, 'QuestGem', 33, 41, 47, 55, 'ARTWORK')
-    frame.message = A.Label(quest, '', 62, -10, 22)
+    frame.message = A.Label(quest, '', 62, -9, 20)
+    frame.message:SetWidth(213)
+    frame.message:SetJustifyH('CENTER')
     frame.special = A.Label(quest, '', 62, -39, 16, 'body')
     frame.special:SetWidth(213)
-    frame.special:SetHeight(37)
+    frame.special:SetHeight(36)
+    frame.special:SetWordWrap(true)
+    frame.special:SetJustifyH('CENTER')
     local count = A.Panel(frame, 335, 625, 110, 83)
     A.Art(count, 'Marbles', 20, 21, 24, 24, 'ARTWORK')
-    A.Label(count, 'MARBLES', 36, -10, 14)
-    frame.progress = A.GoldLabel(count, '', 12, -33, 38, 86)
+    A.Label(count, 'MARBLES', 32, -7, 12)
+    frame.progress = A.GoldLabel(count, '', 12, -29, 34, 86)
     local controls = A.Panel(frame, 455, 625, 220, 83)
     for i, entry in ipairs({
         { 'MouseLeft', 'Left mouse - Shoot' },
@@ -479,7 +578,7 @@ function A.BuildUI()
         { 'EscapeKey', 'Esc - Pause' },
     }) do
         A.Art(controls, entry[1], 23, 16 + (i - 1) * 24, 24, 22, 'ARTWORK')
-        A.Label(controls, entry[2], 43, -4 - (i - 1) * 24, 15, 'body')
+        A.Label(controls, entry[2], 43, -2 - (i - 1) * 24, 14, 'body')
     end
     frame.play = A.Button(frame, 'PLAY', 685, 637, 145, 57, 'PlayIcon', function()
         local r = A.db.run
@@ -516,6 +615,8 @@ function A.BuildUI()
     result.detail:ClearAllPoints()
     result.detail:SetPoint('TOP', 0, -79)
     result.detail:SetWidth(360)
+    result.detail:SetHeight(72)
+    result.detail:SetWordWrap(true)
     result.detail:SetJustifyH('CENTER')
     result.action = A.Button(result, 'NEXT ROUND', 21, 172, 178, 43, 'PlayIcon', function()
         local r = A.db.run

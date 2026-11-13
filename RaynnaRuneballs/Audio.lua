@@ -3,13 +3,13 @@ local lastPlayed = {}
 -- Blizzard FileDataIDs from wowdev's verified listfile (202611122246).
 -- Reference client assets directly; no extracted audio is bundled.
 local files = {
-    Hit = 568461, -- fireballimpacta.ogg
     Match = 568678, -- arcaneexplosion.ogg
     Bomb = 568528, -- smallexplosions_generic_01.ogg
     Frost = 569378, -- frostnova.ogg
     Rewind = 569735, -- teleport.ogg
 }
 local kits = {
+    Hit = { 'IG_MAINMENU_OPTION_CHECKBOX_ON', 856 }, -- small native UI click
     Shoot = { 'IG_MAINMENU_OPTION_CHECKBOX_ON', 856 }, -- quiet native click
     Swap = { 'IG_MAINMENU_OPTION_CHECKBOX_ON', 3175 },
     Win = { 'LEVEL_UP', 618 },

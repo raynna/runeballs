@@ -3,7 +3,7 @@ Raynna's Runeballs brings colourful, Zuma-inspired marble-shooting action to Wor
 Match three or more balls to stop the chain from reaching the portal. Close gaps to trigger combos, build your score, and use Bomb, Frost and Rewind shots to turn the tide.
 
 Features
-- Different winding maps with increasing difficulty, tunnel entrances and later dual-path rounds with bridges.
+- Different winding maps with increasing difficulty, covered passages and later dual-path rounds with equal-length crossing lanes.
 - Automatic Horde or Alliance artwork, bright cartoon marbles and animated effects.
 - WoW sound effects, personal best scores and saved progress per character.
 - Optional flight opening, adjustable scale, sound and reduced-motion settings.
