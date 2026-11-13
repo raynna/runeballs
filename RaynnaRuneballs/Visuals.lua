@@ -11,6 +11,8 @@ local trail, pops, embers, orbit = {}, {}, {}, {}
 local glow, arrow, muzzle, specialGlow
 local holeSparks = {}
 local specialBursts = {}
+local chainAuras = {}
+V.chainAuras = chainAuras
 local specialColors = { Bomb = { 1, 0.48, 0.08 }, Frost = { 0.3, 0.85, 1 }, Rewind = { 0.75, 0.35, 1 } }
 V.specialBursts = specialBursts
 V.holes = {}
@@ -100,6 +102,13 @@ function V.Reset()
             dot:Hide()
         end
     end
+    for _, aura in ipairs(chainAuras) do
+        aura.glow:Hide()
+        aura.ring:Hide()
+        for _, spark in ipairs(aura.sparks) do
+            spark:Hide()
+        end
+    end
     for _, burst in ipairs(specialBursts) do
         burst.core:Hide()
         for _, particle in ipairs(burst.particles) do
@@ -152,6 +161,69 @@ function V.Tick(dt, r)
     board:SetPoint('TOPLEFT', 132 + offset, -155)
 end
 function V.Draw(r, active)
+    local auraCount = 0
+    local animateAuras = not A.MotionReduced() and not r.paused and r.status == 'playing'
+    for _, lane in ipairs(r.other and { r, r.other } or { r }) do
+        for _, ball in ipairs(lane.balls) do
+            if
+                ball.kind
+                and specialColors[ball.kind]
+                and r.status == 'playing'
+                and ball.d >= 24
+                and not A.Engine.Hidden(lane, ball.d)
+                and auraCount < 32
+            then
+                auraCount = auraCount + 1
+                local aura = chainAuras[auraCount]
+                if not aura then
+                    aura = { sparks = {} }
+                    aura.glow = A.Art(board.effectLayer, 'Halo', 0, 0, 40, 40, 'OVERLAY')
+                    aura.glow:SetBlendMode('ADD')
+                    aura.ring = A.Art(board.effectLayer, 'SpecialRing', 0, 0, 31, 31, 'OVERLAY')
+                    for i = 1, 2 do
+                        aura.sparks[i] = A.Art(board.effectLayer, 'SpecialSpark', 0, 0, 7, 7, 'OVERLAY')
+                    end
+                    chainAuras[auraCount] = aura
+                end
+                local x, y = A.Engine.Point(A.Engine.Route(lane), ball.d)
+                local phase = timer * (ball.kind == 'Bomb' and 5 or 3) + auraCount * 1.7
+                local pulse = animateAuras and (0.5 + math.sin(phase) * 0.5) or 0.5
+                local color = specialColors[ball.kind]
+                move(aura.glow, x, y)
+                move(aura.ring, x, y)
+                aura.glow:SetVertexColor(unpack(color))
+                aura.ring:SetVertexColor(unpack(color))
+                aura.glow:SetSize(38 + pulse * 6, 38 + pulse * 6)
+                aura.glow:SetAlpha(0.35 + pulse * 0.25)
+                aura.ring:SetAlpha(0.35 + pulse * 0.35)
+                aura.glow:Show()
+                aura.ring:Show()
+                for i, spark in ipairs(aura.sparks) do
+                    spark:SetShown(animateAuras)
+                    if animateAuras then
+                        local angle = (ball.kind == 'Rewind' and -phase or phase * 0.35) + i * math.pi
+                        local sx, sy = x + math.cos(angle) * 15, y + math.sin(angle) * 15 / 0.86
+                        if ball.kind == 'Bomb' then
+                            local rise = (timer * 1.3 + i * 0.5) % 1
+                            sx, sy = x + (i == 1 and -6 or 6), y - 8 - rise * 17
+                        end
+                        move(spark, sx, sy)
+                        spark:SetVertexColor(unpack(color))
+                        spark:SetRotation(-angle)
+                        spark:SetAlpha(0.45 + pulse * 0.5)
+                    end
+                end
+            end
+        end
+    end
+    for i = auraCount + 1, #chainAuras do
+        local aura = chainAuras[i]
+        aura.glow:Hide()
+        aura.ring:Hide()
+        for _, spark in ipairs(aura.sparks) do
+            spark:Hide()
+        end
+    end
     for lane, burst in ipairs(specialBursts) do
         local state = lane == 1 and r or r.other
         local impact = state and state.specialImpact

@@ -1,3 +1,12 @@
+# 0.5.18
+
+- Special balls travelling in the chain now have a pulsing ability-coloured glow and thin light ring.
+- Bombs emit rising orange sparks, Frost has icy shimmer, and Rewind has orbiting violet light. Ball colours and ability symbols remain visible.
+- Auras are hidden inside tunnels and entrances, use steady glow with reduced motion, and clean up on removal or close. Pooled visuals are capped for performance.
+- Matching rules, 3% special chance and speeds are unchanged.
+
+Lua 5.1 tests cover pulse timing, hidden tunnel balls, reduced motion and cleanup. StyLua passed; unchanged faction layouts reviewed. Actual effects need in-game visual confirmation. Use /reload; saves are untouched.
+
 # 0.5.17
 
 - Specials now retain any of the six ball colours, with 18 matching-colour ability sprites.

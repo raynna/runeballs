@@ -701,3 +701,20 @@ math.random=original
 for kind in ['Bomb','Frost','Rewind']:
  for color in range(1,7): assert((ADDON/f'Media/{kind}{color}.tga').exists())
 print('PASS: all 18 coloured specials, match-only activation, incoming specials and three-neighbour bomb blast')
+
+lua=runtime()
+lua.execute("""
+A.events.OnEvent(A.events,'ADDON_LOADED','RaynnaRuneballs');A.events.OnEvent(A.events,'PLAYER_LOGIN')
+local E=A.Engine;local r=E.NewRun(A.db,30);r.paused=false;r.remaining=0;r.other.remaining=0
+r.balls={{color=1,d=300,kind='Bomb'},{color=2,d=275,kind='Frost'},{color=3,d=250,kind='Rewind'}}
+local cross=E.Crossings(30)[1]
+r.other.balls={{color=4,d=cross.under,kind='Bomb'}}
+A.Draw();assert(#A.Visuals.chainAuras==3,'hidden tunnel special has no leaking aura')
+local aura=A.Visuals.chainAuras[1];assert(aura.glow:IsShown() and aura.sparks[1]:IsShown())
+local alpha=aura.ring.alpha;A.Visuals.Tick(.1,r);A.Draw();assert(alpha~=aura.ring.alpha,'chain special pulses')
+A.db.options.reducedMotion=true;A.Draw();alpha=aura.ring.alpha
+A.Visuals.Tick(.1,r);A.Draw();assert(alpha==aura.ring.alpha and not aura.sparks[1]:IsShown(),'reduced motion uses steady glow')
+r.balls={};A.Draw();assert(not aura.glow:IsShown() and not aura.ring:IsShown(),'removed specials release visuals')
+r.balls={{color=1,d=300,kind='Bomb'}};A.Draw();A.Close();assert(not aura.glow:IsShown())
+""")
+print('PASS: chain ability auras pulse, respect tunnels/reduced motion and clean up')
