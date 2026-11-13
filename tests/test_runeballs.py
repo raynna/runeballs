@@ -15,7 +15,7 @@ def runtime():
             f.CreateFontString=function(self) return create('FontString',nil,self) end
             f.SetBackdrop=function(self,data) self.backdrop=data end
             f.CreateTexture=function(self,name,layer)
-                local t=create('Texture',name,self);t.drawLayer=layer;t.SetAlpha=function(self,v) self.alpha=v end;return t
+                local t=create('Texture',name,self);t.SetVertexColor=function(self,...) self.tint={...} end;t.drawLayer=layer;t.SetAlpha=function(self,v) self.alpha=v end;return t
             end
             return f
         end
@@ -718,3 +718,29 @@ r.balls={};A.Draw();assert(not aura.glow:IsShown() and not aura.ring:IsShown(),'
 r.balls={{color=1,d=300,kind='Bomb'}};A.Draw();A.Close();assert(not aura.glow:IsShown())
 """)
 print('PASS: chain ability auras pulse, respect tunnels/reduced motion and clean up')
+
+lua.execute("""
+local E=A.Engine
+local r=E.NewRun(A.db,1);r.paused=false;r.remaining=0
+r.balls={{color=1,d=400},{color=2,d=375}}
+A.db.options.reducedMotion=false
+local fx,fy=E.Point(1,400);local hx,hy=E.Point(1,390)
+E.Insert(r,2,3,nil,'Frost',hx+8,hy+12)
+assert(r.balls[1].d==425 and r.balls[2].d==400,'physics resolves insertion immediately')
+local x,y=A.BallPosition(r,r.balls[1]);assert(math.abs(x-fx)<.001 and math.abs(y-fy)<.001,'pushed neighbour starts from previous visual position')
+x,y=A.BallPosition(r,r.balls[2]);assert(math.abs(x-hx-8)<.001 and math.abs(y-hy-12)<.001,'inserted ball starts at shot contact')
+E.Animate(r,.08)
+local nx,ny=E.Point(1,425);x,y=A.BallPosition(r,r.balls[1]);assert((x-nx)^2+(y-ny)^2<(fx-nx)^2+(fy-ny)^2)
+E.Animate(r,.09);assert(not r.balls[1].slideAge and not r.balls[2].slideAge)
+for color=1,6 do
+ for _,kind in ipairs({'Bomb','Frost','Rewind'}) do
+  r.balls={{color=color,d=300,kind=kind}};A.Draw()
+  local tint=A.Visuals.chainAuras[1].ring.tint
+  for channel=1,3 do assert(tint[channel]==A.colors[color][channel],'aura uses matching marble colour') end
+  E.Special(r,1,kind);assert(r.specialImpact.color==color)
+  A.Draw();tint=A.Visuals.specialBursts[1].core.tint
+  for channel=1,3 do assert(tint[channel]==A.colors[color][channel]) end
+ end
+end
+""")
+print('PASS: matching-colour auras and impacts, eased insertion with immediate physics')

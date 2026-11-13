@@ -185,10 +185,10 @@ function V.Draw(r, active)
                     end
                     chainAuras[auraCount] = aura
                 end
-                local x, y = A.Engine.Point(A.Engine.Route(lane), ball.d)
+                local x, y = A.BallPosition(lane, ball)
                 local phase = timer * (ball.kind == 'Bomb' and 5 or 3) + auraCount * 1.7
                 local pulse = animateAuras and (0.5 + math.sin(phase) * 0.5) or 0.5
-                local color = specialColors[ball.kind]
+                local color = A.colors[ball.color]
                 move(aura.glow, x, y)
                 move(aura.ring, x, y)
                 aura.glow:SetVertexColor(unpack(color))
@@ -231,7 +231,7 @@ function V.Draw(r, active)
         if impact then
             local progress = math.min(1, impact.age / 1.1)
             local reduced = A.MotionReduced()
-            local color = specialColors[impact.kind]
+            local color = A.colors[impact.color] or A.colors[6]
             local rewind = impact.kind == 'Rewind'
             burst.core:SetTexture(A.media .. (rewind and 'PortalSwirl' or 'SpecialRing') .. '.tga')
             burst.core:SetVertexColor(unpack(color))
@@ -341,7 +341,7 @@ function V.Draw(r, active)
         move(specialGlow, shot and shot.kind and shot.x or 380, shot and shot.kind and shot.y or 250)
         specialGlow:SetTexture(A.media .. 'SpecialRing.tga')
         specialGlow:SetBlendMode('BLEND')
-        specialGlow:SetVertexColor(unpack(specialColors[ability]))
+        specialGlow:SetVertexColor(unpack(A.colors[shot and shot.kind and shot.color or r.loaded]))
         local size = shot and shot.kind and 37 or 44
         local pulse = moving and math.sin(timer * 5) * 2 or 0
         specialGlow:SetSize(size + pulse, size + pulse)
@@ -357,7 +357,7 @@ function V.Draw(r, active)
             t:SetShown(x >= 0 and x <= 760 and y >= 0 and y <= 500)
             t:SetAlpha((1 - i / 7) * 0.7)
             t:SetSize(24 - i * 2, 24 - i * 2)
-            t:SetVertexColor(unpack(shot.kind and specialColors[shot.kind] or A.colors[shot.color]))
+            t:SetVertexColor(unpack(A.colors[shot.color]))
         end
     end
     for i, t in ipairs(pops) do

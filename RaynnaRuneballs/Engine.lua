@@ -494,20 +494,21 @@ function E.Match(run, index, combo)
             specials[#specials + 1] = {
                 d = run.balls[i].d,
                 kind = run.balls[i].kind,
+                color = run.balls[i].color,
                 targets = run.balls[i].kind == 'Bomb' and bombTargets(run, i) or nil,
             }
         end
     end
     removeGroup(run, first, last, combo or 1)
     for _, special in ipairs(specials) do
-        triggerSpecial(run, special.d, special.kind, combo or 1, special.targets)
+        triggerSpecial(run, special.d, special.kind, combo or 1, special.targets, special.color)
     end
     if A.GameSound then
         A.GameSound((combo or 1) > 1 and 'Combo' or 'Match', combo)
     end
     return combo or 1
 end
-function E.Insert(run, index, color, target, kind)
+function E.Insert(run, index, color, target, kind, hitX, hitY)
     local rear = run.balls[index]
     local front = run.balls[index - 1]
     local d = rear and rear.d + spacing or (front and front.d - spacing or 0)
@@ -515,7 +516,12 @@ function E.Insert(run, index, color, target, kind)
         d = math.max(rear.d + spacing, math.min(front.d - spacing, target))
     end
     local shifted = {}
-    table.insert(run.balls, index, { color = color, d = d, kind = kind })
+    local inserted = { color = color, d = d, kind = kind }
+    if hitX and hitY then
+        local x, y = E.Point(E.Route(run), d)
+        inserted.slideX, inserted.slideY, inserted.slideAge = hitX - x, hitY - y, 0
+    end
+    table.insert(run.balls, index, inserted)
     for i = index - 1, 1, -1 do
         local ball = run.balls[i]
         local needed = run.balls[i + 1].d + spacing
@@ -523,6 +529,12 @@ function E.Insert(run, index, color, target, kind)
             break
         end
         shifted[#shifted + 1] = { ball = ball, d = ball.d }
+        local x, y = E.Point(E.Route(run), ball.d)
+        local nx, ny = E.Point(E.Route(run), needed)
+        local remaining = math.max(0, 1 - (ball.slideAge or 0.16) / 0.16) ^ 3
+        ball.slideX = x - nx + (ball.slideX or 0) * remaining
+        ball.slideY = y - ny + (ball.slideY or 0) * remaining
+        ball.slideAge = 0
         ball.d = needed
     end
     local matched = E.Match(run, index)
@@ -530,14 +542,15 @@ function E.Insert(run, index, color, target, kind)
     if matched > 0 then
         for _, old in ipairs(shifted) do
             old.ball.d = old.d
+            old.ball.slideX, old.ball.slideY, old.ball.slideAge = nil, nil, nil
         end
     end
     run.head = run.balls[1] and run.balls[1].d or 0
     return matched
 end
-triggerSpecial = function(run, d, kind, combo, targets)
+triggerSpecial = function(run, d, kind, combo, targets, color)
     local x, y = E.Point(E.Route(run), d)
-    run.specialImpact = { x = x, y = y, kind = kind, age = 0, d = d, route = E.Route(run) }
+    run.specialImpact = { x = x, y = y, kind = kind, color = color, age = 0, d = d, route = E.Route(run) }
     if A.GameSound then
         A.GameSound(kind)
     end
@@ -562,10 +575,11 @@ end
 -- Direct effect helper retained for isolated effect tests; shots always insert.
 function E.Special(run, index, kind)
     local d = run.balls[index].d
+    local color = run.balls[index].color
     if kind ~= 'Bomb' then
         removeGroup(run, index, index, 1, kind == 'Frost' and 'Shatter' or 'Portal')
     end
-    triggerSpecial(run, d, kind, 1, kind == 'Bomb' and bombTargets(run, index) or nil)
+    triggerSpecial(run, d, kind, 1, kind == 'Bomb' and bombTargets(run, index) or nil, color)
 end
 local function advanceChain(run, dt)
     local balls = run.balls
@@ -659,6 +673,14 @@ function E.Fire(run, x, y)
     return true
 end
 function E.Animate(r, dt)
+    for _, ball in ipairs(r.balls) do
+        if ball.slideAge then
+            ball.slideAge = ball.slideAge + dt
+            if ball.slideAge >= 0.16 then
+                ball.slideAge, ball.slideX, ball.slideY = nil, nil, nil
+            end
+        end
+    end
     if r.specialImpact then
         r.specialImpact.age = r.specialImpact.age + dt
         if r.specialImpact.age >= 1.1 then
@@ -831,7 +853,15 @@ local function shoot(r, dt)
             if A.GameSound then
                 A.GameSound('Hit')
             end
-            E.Insert(hitLane, index, shot.color, d + (index == hit and spacing or -spacing), shot.kind)
+            E.Insert(
+                hitLane,
+                index,
+                shot.color,
+                d + (index == hit and spacing or -spacing),
+                shot.kind,
+                shot.x,
+                shot.y
+            )
             r.shot = nil
         else
             shot.x, shot.y = shot.x + dx, shot.y + dy

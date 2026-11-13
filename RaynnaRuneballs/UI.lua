@@ -15,6 +15,14 @@ local function move(texture, x, y)
     texture:ClearAllPoints()
     texture:SetPoint('CENTER', board, 'TOPLEFT', x, -y * YS)
 end
+function A.BallPosition(lane, marble)
+    local x, y = E.Point(E.Route(lane), marble.d)
+    if marble.slideAge and not A.MotionReduced() then
+        local remaining = math.max(0, 1 - marble.slideAge / 0.16) ^ 3
+        x, y = x + (marble.slideX or 0) * remaining, y + (marble.slideY or 0) * remaining
+    end
+    return x, y
+end
 local function ball(index)
     if not balls[index] then
         balls[index] = A.Art(board, 'Ball1', 0, 0, 27, 27)
@@ -173,7 +181,7 @@ function A.Draw()
             local texture = ball(visualIndex)
             texture:SetParent(lane == r and upperRoad or board)
             texture:SetTexture(shotArt(b.color, b.kind))
-            move(texture, E.Point(E.Route(lane), b.d))
+            move(texture, A.BallPosition(lane, b))
             texture:SetShown(b.d >= 8 and (b.d < 24 or not E.Hidden(lane, b.d)))
             local shrink = 1
             if lane.ending and lane.ending.phase == 'drain' then

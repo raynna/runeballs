@@ -1,3 +1,11 @@
+# 0.5.19
+
+- Special-ball auras, loaded/in-flight rings, trails and special impact particles now use the marble's matching colour instead of an ability colour. Symbols still identify Bomb, Frost and Rewind.
+- Inserted balls ease from their projectile contact point into the chain over 0.16 seconds; pushed neighbours ease aside from their previous positions.
+- Collision and matching resolve immediately. Reduced motion skips the positional animation, and special auras follow the eased positions.
+
+Lua 5.1 regressions cover all six aura/impact colours and insertion start/settle positions alongside existing gameplay checks. StyLua passed; unchanged faction layouts reviewed. Actual animation needs in-game confirmation. Use /reload; saves are preserved.
+
 # 0.5.18
 
 - Special balls travelling in the chain now have a pulsing ability-coloured glow and thin light ring.
