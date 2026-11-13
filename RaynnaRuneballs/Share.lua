@@ -7,7 +7,7 @@ function A.ShareMessage(run)
         .. run.level
         .. '/100 with '
         .. A.Number(run.score)
-        .. ' points!'
+        .. ' points! Available on CurseForge!'
 end
 function A.OpenShare()
     local run = A.db.run

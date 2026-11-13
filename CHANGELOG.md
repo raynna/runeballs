@@ -1,3 +1,12 @@
+# 0.5.10
+
+Includes the distinct late-round layouts, capped tunnels, round-one restart after defeat, chat sharing and slower combo animations from 0.5.9.
+
+Share messages now end with "Available on CurseForge!" Example:
+Raynna's Runeballs: reached round 42/100 with 12,345 points! Available on CurseForge!
+
+Gameplay regression tests passed. Use /reload after installation; saved progress is preserved.
+
 # 0.5.9
 
 - Reworked late dual-path rounds into visibly distinct orientations and detours. All 100 rounds have distinct map-scale route signatures; dual lanes retain equal length, separated exits, edge entrances, perpendicular crossings and launcher clearance.
