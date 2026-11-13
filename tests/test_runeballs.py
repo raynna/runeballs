@@ -59,7 +59,7 @@ r=E.NewRun(db,1);r.remaining=0;r.paused=false;r.balls={{color=1,d=400},{color=2,
 E.Step(db,0.05);assert(r.balls[1].d==400 and r.balls[2].d>350)
 for i=1,40 do E.Step(db,0.05) end
 assert(r.balls[1].d>400 and math.abs(r.balls[1].d-r.balls[2].d-25)<0.001,'rear pushes front after contact')
-assert(E.Speed(r)==24 and E.Speed({level=5})>24 and E.Speed({level=10})<27,'gentle opening ramps into faster later rounds')
+assert(E.Speed(r)==32 and E.Speed({level=5})>32 and E.Speed({level=10})<35,'gentle opening ramps into faster later rounds')
 r=E.NewRun(db,2);r.paused=false;r.remaining=0;r.balls={{color=1,d=E.Path(2).length-0.01}}
 E.Step(db,0.05); assert(r.status=='lost' and not r.paused and r.ending.phase=='drain','defeat starts animated drain')
 local drainCount=#r.balls

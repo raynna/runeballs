@@ -1,3 +1,11 @@
+# 0.5.5
+
+- Increased base chain speed from 24 to 32 path pixels/second: round one is 33% faster.
+- Retained the gradual level progression and exactly half-speed movement on each dual-path lane.
+- Existing runs use the new speed after /reload without resetting progress.
+
+Lua 5.1 gameplay and speed checks, StyLua and faction preview review passed. Not playtested inside WoW.
+
 # 0.5.4
 
 - Replaced overlapping road strips with continuous antialiased artwork generated from all 100 exact routes, including the 12 second lanes. One road texture per lane removes curve seams and reduces UI texture count.
