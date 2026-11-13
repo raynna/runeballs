@@ -104,9 +104,48 @@ function E.Path(level)
         -- A rigid half-turn preserves every segment length exactly. The exits
         -- are on opposite sides of the launcher, not beside one another.
         local round = level % 1000
-        local top = 130 + math.sin(round * 0.61) * 4
-        local bottom = 450 + math.cos(round * 0.53) * 4
-        controls = { { 0, top }, { 620, top }, { 620, bottom }, { 90, bottom }, { 90, 400 } }
+        local rounds = { 30, 40, 50, 60, 65, 70, 75, 80, 85, 90, 95, 100 }
+        local variant = 1
+        for i, candidate in ipairs(rounds) do
+            if candidate == round then
+                variant = i
+                break
+            end
+        end
+        local family = math.floor((variant - 1) / 4)
+        if family == 0 then
+            controls = { { 0, 130 }, { 620, 130 }, { 620, 450 }, { 90, 450 }, { 90, 400 } }
+        elseif family == 1 then
+            controls = {
+                { 0, 130 },
+                { 620, 130 },
+                { 620, 290 },
+                { 700, 290 },
+                { 700, 450 },
+                { 90, 450 },
+                { 90, 400 },
+            }
+        else
+            controls = {
+                { 0, 80 },
+                { 300, 80 },
+                { 300, 130 },
+                { 620, 130 },
+                { 620, 480 },
+                { 50, 480 },
+                { 50, 240 },
+            }
+        end
+        -- Rotate the complete layout around the board, then mirror its partner.
+        -- Each later family adds a visible detour; paired lengths stay identical.
+        for _, point in ipairs(controls) do
+            if (variant - 1) % 4 >= 2 then
+                point[1] = 760 - point[1]
+            end
+            for turn = 1, (variant - 1) % 2 do
+                point[1], point[2] = 380 + (point[2] - 250) * 760 / 500, 250 - (point[1] - 380) * 500 / 760
+            end
+        end
         if level >= 1000 then
             for _, point in ipairs(controls) do
                 point[1], point[2] = 760 - point[1], 500 - point[2]
@@ -288,6 +327,16 @@ function E.Init(db)
             r.head = (r.head or 0) + offset
             r.pathVersion = 1
         end
+        if r.layoutVersion ~= 2 and E.IsDualLevel(r.level) then
+            -- Preserve chain spacing/counts on changed maps and leave reaction room.
+            local shift = math.max(0, (r.head or 0) - (E.Path(E.Route(r)).length - 180))
+            for _, ball in ipairs(r.balls) do
+                ball.d = ball.d - shift
+            end
+            r.head = r.balls[1] and r.balls[1].d or 0
+            r.shot = nil
+        end
+        r.layoutVersion = 2
         if r.other then
             E.Init({ run = r.other })
         end
@@ -337,6 +386,7 @@ local function newLane(db, level, score)
     local run = {
         version = 2,
         pathVersion = 1,
+        layoutVersion = 2,
         level = level,
         score = score or 0,
         balls = {},
@@ -518,7 +568,7 @@ local function advanceChain(run, dt)
             local rear = balls[group.last + 1]
             local front = balls[group.last]
             local same = front.color == rear.color
-            delta = same and -210 * dt or 0
+            delta = same and -90 * dt or 0
             local minimum = rear.d + spacing - front.d
             if delta <= minimum + 0.000001 then
                 delta = minimum
@@ -587,7 +637,7 @@ function E.Animate(r, dt)
     end
     if r.burst then
         r.burst.age = r.burst.age + dt
-        if r.burst.age > 0.55 then
+        if r.burst.age > (r.burst.combo > 1 and 0.9 or 0.55) then
             r.burst = nil
         end
     end
@@ -705,6 +755,7 @@ local function finish(db, r)
             A.GameSound('Lose')
         end
         r.status = 'lost'
+        db.level = 1
         E.BeginEnding(r, false)
     end
 end
@@ -785,6 +836,7 @@ function E.Step(db, dt)
         finish(holder, other)
         finish(db, r)
         if r.status == 'lost' or other.status == 'lost' then
+            db.level = 1
             if r.status ~= 'lost' then
                 r.status = 'lost'
                 E.BeginEnding(r, false)
@@ -861,12 +913,16 @@ function E.Crossings(level)
     end
     return crossings
 end
+function E.TunnelHalf(cross)
+    local length = E.Path(cross.level + 1000).length
+    return math.max(0, math.min(64, cross.under - 24, length - cross.under - 180))
+end
 function E.CoverBounds(cross)
     if cross.bounds then
         return unpack(cross.bounds)
     end
     local left, top, right, bottom = math.huge, math.huge, -math.huge, -math.huge
-    for offset = -76, 76, 4 do
+    for offset = -E.TunnelHalf(cross), E.TunnelHalf(cross), 4 do
         local x, y = E.Point(cross.level + 1000, cross.under + offset)
         y = y * 0.86
         left, top, right, bottom =
@@ -885,8 +941,7 @@ function E.Hidden(run, distance)
         return false
     end
     for _, cross in ipairs(E.Crossings(run.level)) do
-        local left, top, width, height = E.CoverBounds(cross)
-        if x >= left and x <= left + width and y * 0.86 >= top and y * 0.86 <= top + height then
+        if math.abs(distance - cross.under) <= E.TunnelHalf(cross) then
             return true
         end
     end

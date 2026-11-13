@@ -1,6 +1,6 @@
 # Raynna's Runeballs
 
-A standalone coloured-marble shooter for WoW Forever (Interface 16001), version 0.5.8.
+A standalone coloured-marble shooter for WoW Forever (Interface 16001), version 0.5.9.
 Aim an arcane launcher into a winding chain and match three or more marbles
 before its leading ball reaches the void portal. Joining matching groups creates
 chain reactions and score multipliers. Every round has a distinct route: a grove
@@ -176,3 +176,10 @@ Developer testing (Its-Raynna / Itsraynna character only): `/rrb demo N` starts
 any round 1–100 immediately with its normal speed and lanes. `/rrb demo off`
 returns to the paused campaign. Demo progress and scores are session-only;
 reloading also restores the saved campaign. `//rrb` is an additional alias.
+
+Version 0.5.9 gives every dual round a distinct visible route through mirrored
+orientations and new detours. Lane lengths match, exits remain separated, and
+tunnels cover at most 128 path units with at least 180 open units before exits.
+Losing ends the run; New Game restarts round one. Share Result previews your
+round and score, with selectable chat destinations and a separate Send button.
+Matching sections retract more slowly so chain combos are easier to follow.

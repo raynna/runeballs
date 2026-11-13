@@ -288,9 +288,9 @@ for _,level in ipairs({30,40,50,60,65,70,75,80,85,90,95,100}) do
  assert(#crosses==2,'two clear crossings with long exposed runs')
  for _,c in ipairs(crosses) do
   assert(math.abs(math.sin(c.angle-c.underAngle))>0.97,'near-right-angle intersection')
-  assert(E.Hidden({level=level,route=level+1000},c.under-65))
-  assert(E.Hidden({level=level,route=level+1000},c.under+65))
-  assert(not E.Hidden({level=level,route=level+1000},c.under+115))
+  assert(E.Hidden({level=level,route=level+1000},c.under-E.TunnelHalf(c)*.8))
+  assert(E.Hidden({level=level,route=level+1000},c.under+E.TunnelHalf(c)*.8))
+  assert(not E.Hidden({level=level,route=level+1000},c.under+E.TunnelHalf(c)+25))
  end
 end
 local db={};E.Init(db)
@@ -548,3 +548,66 @@ local saved=A.db
 UnitName=function() return 'Someone Else' end
 SlashCmdList.RAYNNARUNEBALLS('demo 10');assert(A.db==saved)
 """)
+
+lua.execute("""
+local E=A.Engine
+local signatures={}
+for level=1,100 do
+ local cells={}
+ for _,route in ipairs(E.IsDualLevel(level) and {level,level+1000} or {level}) do
+  for d=0,E.Path(route).length,5 do
+   local x,y=E.Point(route,d);cells[math.floor(x/20)..':'..math.floor(y/20)]=true
+  end
+ end
+ local keys={};for k in pairs(cells) do keys[#keys+1]=k end;table.sort(keys)
+ local signature=table.concat(keys,',');assert(not signatures[signature],'rounds must differ at visible map scale');signatures[signature]=level
+ if E.IsDualLevel(level) then
+  for _,cross in ipairs(E.Crossings(level)) do
+   local half=E.TunnelHalf(cross)
+   assert(half<=64 and half>=0)
+   assert(E.Path(level+1000).length-cross.under-half>=180)
+  end
+  for d=E.Path(level+1000).length-179,E.Path(level+1000).length,3 do
+   assert(not E.Hidden({level=level,route=level+1000},d),'exit approach stays shootable')
+  end
+ end
+end
+local db={};E.Init(db);local r=E.NewRun(db,100)
+r.layoutVersion=nil;r.other.layoutVersion=nil;r.head=9999;r.balls={{color=1,d=9999},{color=2,d=9974}}
+r.score=1234;E.Init(db)
+assert(r.score==1234 and #r.balls==2 and r.balls[1].d-r.balls[2].d==25 and r.paused)
+assert(r.head<=E.Path(100).length-180+0.000001 and r.layoutVersion==2)
+""")
+print('PASS: 100 visible route signatures, capped tunnels, exposed exits and saved-layout migration')
+
+lua=runtime()
+lua.execute("""
+A.events.OnEvent(A.events,'ADDON_LOADED','RaynnaRuneballs');A.events.OnEvent(A.events,'PLAYER_LOGIN')
+local E=A.Engine
+for _,level in ipairs({15,30,100}) do
+ local r=E.NewRun(A.db,level);r.paused=false;r.remaining=0;r.score=1234
+ local lane=r.other or r
+ lane.remaining=0;lane.balls={{color=1,d=E.Path(E.Route(lane)).length-.001}}
+ E.Step(A.db,.05)
+ assert(r.status=='lost' and A.db.level==1 and r.level==level and r.score==1234)
+ r.ending.done=true
+ A.frame.play:GetScript('OnClick')()
+ assert(A.db.run.level==1 and A.db.run.score==0)
+end
+local r=E.NewRun(A.db,1);r.paused=false;r.remaining=0;r.balls={{color=1,d=400},{color=1,d=300}}
+E.Step(A.db,.05);assert(math.abs(r.balls[1].d-395.5)<.001,'visible 90px/sec combo retraction')
+r.burst={age=0,combo=2};E.Animate(r,.7);assert(r.burst);E.Animate(r,.21);assert(not r.burst)
+r.status='lost';r.level=42;r.score=12345
+GetChannelList=function() return 1,'General',false end
+local sent={};SendChatMessage=function(...) sent[#sent+1]={...} end
+A.OpenShare();assert(#sent==0)
+local p=A.frame.share
+assert(p.preview:GetText():find('42/100') and p.preview:GetText():find('12,345'))
+p.send:GetScript('OnClick')();assert(sent[1][2]=='SAY')
+A.OpenShare();for i=1,7 do p.choose:GetScript('OnClick')() end
+p.send:GetScript('OnClick')();assert(#sent==1,'empty whisper recipient rejected')
+p.target:SetText('A Friend');p.send:GetScript('OnClick')();assert(sent[2][2]=='WHISPER' and sent[2][4]=='A Friend')
+p.choose:GetScript('OnClick')();p.send:GetScript('OnClick')();assert(sent[3][2]=='CHANNEL' and sent[3][4]==1)
+A.db.demo=true;assert(A.ShareMessage(r):find('[Demo]',1,true)==1)
+""")
+print('PASS: loss restarts round one, slower combos, result preview and explicit chat sharing')

@@ -1,3 +1,15 @@
+# 0.5.9
+
+- Reworked late dual-path rounds into visibly distinct orientations and detours. All 100 rounds have distinct map-scale route signatures; dual lanes retain equal length, separated exits, edge entrances, perpendicular crossings and launcher clearance.
+- Tunnels are limited to 128 path units, with at least 180 open units before exits. Lower-lane gaps are baked along the route instead of rectangular background masks that could hide nearby bends. Covered balls remain protected from shots.
+- Losing resets progression; New Game starts round one with zero score. The result keeps the finished round and score for sharing.
+- Share Result previews a message naming Raynna's Runeballs, round and score. Choose Say, Yell, Party, Raid, Guild, Officer, Instance, Whisper or a joined channel, then click Send. Demo results are labelled.
+- Matching sections retract at 90 instead of 210 path units/second, and combo messages remain visible for 0.9 seconds. Normal forward speed is unchanged.
+- Existing runs preserve scores and marble counts, pause on reload and gain safe exit clearance if their map became shorter.
+
+Lua 5.1 regression tests cover route uniqueness, geometry, tunnel caps and exit access, save migration, defeat resets, chat callbacks and slower combos. StyLua and both faction previews checked, including rounds 80/90/100. Not playtested inside WoW.
+Installed updates take effect with /reload; saves are preserved.
+
 # 0.5.8
 
 - Developer identity matching handles split name/surname returns, UTF-8 spaces and character-panel display names as a fallback.

@@ -135,8 +135,13 @@ local function drawRoad(level)
     end
     local crossing = A.db.run.other and E.Crossings(level) or {}
     for i, cross in ipairs(crossing) do
-        cover(bridges, i, covers, E.CoverBounds(cross))
-        coveredGuide(level + 1000, cross.under - 72, cross.under + 72, covers)
+        -- Lower-road gaps are baked along the route, never rectangular background masks.
+        coveredGuide(
+            level + 1000,
+            cross.under - E.TunnelHalf(cross),
+            cross.under + E.TunnelHalf(cross),
+            covers
+        )
     end
     for i = guideCount + 1, #guides do
         guides[i]:Hide()
@@ -169,7 +174,7 @@ function A.Draw()
             texture:SetParent(lane == r and upperRoad or board)
             texture:SetTexture(shotArt(b.color))
             move(texture, E.Point(E.Route(lane), b.d))
-            texture:SetShown(b.d >= 8)
+            texture:SetShown(b.d >= 8 and (b.d < 24 or not E.Hidden(lane, b.d)))
             local shrink = 1
             if lane.ending and lane.ending.phase == 'drain' then
                 shrink = math.max(0.05, math.min(1, (E.Path(E.Route(lane)).length + 18 - b.d) / 38))
@@ -254,7 +259,7 @@ function A.Draw()
                 .. '+'
                 .. A.Number(burst.count * 100 * burst.combo)
         )
-        board.combo:SetAlpha(math.max(0, 1 - burst.age / 0.55))
+        board.combo:SetAlpha(math.max(0, 1 - burst.age / (burst.combo > 1 and 0.9 or 0.55)))
     end
     local message = 'Seal the portal'
     if r.status == 'won' then
@@ -288,6 +293,9 @@ function A.Draw()
     A.FitText(frame.message, message:upper(), 213, 18, 12)
     local resultVisible = r.status ~= 'playing' and (not r.ending or r.ending.phase == 'result')
     frame.result:SetShown(resultVisible)
+    if not resultVisible and frame.share then
+        frame.share:Hide()
+    end
     if resultVisible then
         local won = r.status == 'won'
         local t = (not A.MotionReduced() and r.ending) and math.min(1, r.ending.popupAge / 0.35) or 1
@@ -313,7 +321,7 @@ function A.Draw()
                 .. A.Number(A.db.best)
         )
         frame.result.action:SetText(
-            won and (r.level >= E.MAX_LEVEL and 'PLAY AGAIN' or 'NEXT ROUND') or 'TRY AGAIN'
+            won and (r.level >= E.MAX_LEVEL and 'PLAY AGAIN' or 'NEXT ROUND') or 'NEW GAME'
         )
         frame.result.action:SetEnabled(not r.ending or r.ending.done)
     end
@@ -323,7 +331,7 @@ function A.Draw()
     frame.play:SetIcon(r.status == 'playing' and not r.paused and 'PauseIcon' or 'PlayIcon')
     frame.play:SetText(
         r.status == 'won' and (r.level >= E.MAX_LEVEL and 'PLAY AGAIN' or 'NEXT ROUND')
-            or r.status == 'lost' and 'TRY AGAIN'
+            or r.status == 'lost' and 'NEW GAME'
             or r.paused and 'PLAY'
             or 'PAUSE'
     )
@@ -409,6 +417,9 @@ update = function(_, elapsed)
 end
 function A.Close()
     A.Pause()
+    if frame.share then
+        frame.share:Hide()
+    end
     A.autoOpened = false
     if frame then
         frame:Hide()
@@ -621,7 +632,8 @@ function A.BuildUI()
                 r.level >= E.MAX_LEVEL and 0 or r.score
             )
         elseif r.status == 'lost' then
-            r = E.NewRun(A.db, r.level, 0)
+            A.db.level = 1
+            r = E.NewRun(A.db, 1, 0)
         end
         r.paused = not r.paused
         if r.paused then
@@ -632,7 +644,7 @@ function A.BuildUI()
         A.Draw()
     end)
     A.Button(frame, 'SETTINGS', 840, 637, 150, 57, 'SettingsIcon', A.OpenSettings)
-    local result = A.Panel(board, 180, 100, 400, 232)
+    local result = A.Panel(board, 180, 100, 400, 285)
     frame.result = result
     result:ClearAllPoints()
     result:SetPoint('CENTER', board, 'CENTER')
@@ -656,6 +668,10 @@ function A.BuildUI()
         end
     end)
     A.Button(result, 'CLOSE', 211, 172, 168, 43, 'CloseIcon', A.Close)
+    A.Button(result, 'SHARE RESULT', 100, 226, 200, 43, nil, function()
+        A.OpenShare()
+    end)
+    A.BuildShare(frame, board)
     result:Hide()
     A.Visuals.Build(frame, board)
     frame:SetScript('OnHide', function()

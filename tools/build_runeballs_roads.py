@@ -18,5 +18,15 @@ for route,path in routes.items():
         radius=width*scale/2
         for x,y in points:
             draw.ellipse((x-radius,y-radius,x+radius,y+radius),fill=color)
+    if route>=1000:
+        scene=next(s for s in scenes if s['level']==route-1000)
+        # Erase only the covered part of this lane, leaving neighbouring roads intact.
+        distances=[0]
+        for a,b in zip(path,path[1:]):
+            distances.append(distances[-1]+((b[0]-a[0])**2+(b[1]-a[1])**2)**.5)
+        for cross in scene['crossings']:
+            hidden=[point for point,distance in zip(points,distances) if abs(distance-cross['under'])<=cross['half']]
+            if len(hidden)>1:
+                draw.line(hidden,fill=(0,0,0,0),width=36*scale,joint='curve')
     road.resize((1024,512),Image.Resampling.LANCZOS).save(ROOT/f'RaynnaRuneballs/Media/Road{route}.tga')
 print(f'Built {len(routes)} continuous route textures.')

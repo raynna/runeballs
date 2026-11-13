@@ -170,7 +170,7 @@ end
 local function demo(value)
     local allowed, identity = developerIdentity()
     if not allowed then
-        print('Runeballs 0.5.8: demo restricted to Its Raynna. Detected: [' .. identity .. ']')
+        print('Runeballs 0.5.9: demo restricted to Its Raynna. Detected: [' .. identity .. ']')
         return
     end
     if value == 'off' then
@@ -191,6 +191,7 @@ local function demo(value)
     A.Pause()
     campaignDB = campaignDB or A.db
     A.db = {
+        demo = true,
         options = campaignDB.options,
         appearance = campaignDB.appearance,
         best = campaignDB.best,

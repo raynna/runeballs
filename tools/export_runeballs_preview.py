@@ -19,7 +19,7 @@ for scene in data:
         path=engine.Path(level+1000)
         scene['other']=[[path[i].x,path[i].y] for i in range(1,len(path)+1)]
         scene['otherMarbles']=[list(engine.Point(level+1000,d)) for d in range(14,1150,25)]
-        scene['crossings']=[{'x':c.x,'y':c.y,'angle':c.angle,'bounds':list(engine.CoverBounds(c)),'guide':[[*engine.Point(level+1000,c.under+offset),math.atan2((engine.Point(level+1000,c.under+offset)[1]-engine.Point(level+1000,c.under+offset-4)[1])*.86,engine.Point(level+1000,c.under+offset)[0]-engine.Point(level+1000,c.under+offset-4)[0])] for offset in range(-72,73,26)]} for c in engine.Crossings(level).values()]
+        scene['crossings']=[{'x':c.x,'y':c.y,'angle':c.angle,'bounds':list(engine.CoverBounds(c)), 'under':c.under, 'half':engine.TunnelHalf(c),'guide':[[*engine.Point(level+1000,c.under+offset),math.atan2((engine.Point(level+1000,c.under+offset)[1]-engine.Point(level+1000,c.under+offset-4)[1])*.86,engine.Point(level+1000,c.under+offset)[0]-engine.Point(level+1000,c.under+offset-4)[0])] for offset in range(-int(engine.TunnelHalf(c)),int(engine.TunnelHalf(c))+1,26)]} for c in engine.Crossings(level).values()]
 (root/'.test-deps').mkdir(exist_ok=True)
 (root/'.test-deps/runeballs-scenes.json').write_text(json.dumps(data))
 print('Exported 100 exact engine routes.')

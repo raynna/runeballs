@@ -31,7 +31,9 @@ def preview(faction,scene):
   road_art=Image.open(MEDIA/f'Road{route_id}.tga').resize((816,430),Image.Resampling.LANCZOS)
   im.alpha_composite(road_art,(104,155))
  def marbles(points):
-  for x,y in points:sprite('Ball'+str(rng.randrange(1,scene['colors']+1)),132+x,155+y*.86,27,27)
+  for index,(x,y) in enumerate(points):
+   if points is scene.get('otherMarbles') and any(abs(14+index*25-c['under'])<=c['half'] for c in scene['crossings']):continue
+   sprite('Ball'+str(rng.randrange(1,scene['colors']+1)),132+x,155+y*.86,27,27)
  def coverbox(left,top,right,bottom):
   box=tuple(round(v) for v in (left,top,right,bottom))
   im.paste(background.crop(box),box)
@@ -42,7 +44,7 @@ def preview(faction,scene):
  if 'other' in scene:
   road(scene['other']);entrance(scene['other']);marbles(scene.get('otherMarbles',[]))
   for c in scene['crossings']:
-   x,y,w,h=c['bounds'];coverbox(132+x,155+y,132+x+w,155+y+h)
+   # Underground road gaps are part of the baked lower-lane texture.
    for gx,gy,angle in c['guide']:
     for side in [-1,1]:
      wing=angle+side*.65;d.line((132+gx-6*math.cos(wing),155+gy*.86-6*math.sin(wing),132+gx,155+gy*.86),fill=(145,122,83),width=2)
