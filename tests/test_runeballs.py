@@ -58,7 +58,7 @@ r=E.NewRun(db,1);r.remaining=0;r.paused=false;r.balls={{color=1,d=400},{color=2,
 E.Step(db,0.05);assert(r.balls[1].d==400 and r.balls[2].d>350)
 for i=1,40 do E.Step(db,0.05) end
 assert(r.balls[1].d>400 and math.abs(r.balls[1].d-r.balls[2].d-25)<0.001,'rear pushes front after contact')
-assert(E.Speed(r)==18 and E.Speed({level=5})>18 and E.Speed({level=10})<21,'gentle opening ramps into faster later rounds')
+assert(E.Speed(r)==24 and E.Speed({level=5})>24 and E.Speed({level=10})<27,'gentle opening ramps into faster later rounds')
 r=E.NewRun(db,2);r.paused=false;r.remaining=0;r.balls={{color=1,d=E.Path(2).length-0.01}}
 E.Step(db,0.05); assert(r.status=='lost' and not r.paused and r.ending.phase=='drain','defeat starts animated drain')
 local drainCount=#r.balls
@@ -390,7 +390,7 @@ for level=1,100 do
  assert((r.other~=nil)==E.IsDualLevel(level))
  if level<30 then assert(not r.other) end
  local base=E.Speed({level=level});assert(base>previous);previous=base
- if r.other then assert(E.Speed(r)<base*0.6 and #r.balls<=12) end
+ if r.other then assert(E.Speed(r)==base/2 and E.Speed(r.other)==base/2 and #r.balls<=12) end
  assert(E.Remaining(r)==E.MarbleCount(level))
 end
 local r=E.NewRun(db,100);r.paused=false;r.balls={};r.remaining=0;r.other.balls={};r.other.remaining=0

@@ -1,3 +1,12 @@
+# 0.5.1
+
+- Starting speed increased from 18 to 24 path pixels/second (33% faster).
+- Each dual-path lane now runs at exactly half the normal speed for its level.
+- The 100-level difficulty curve, shorter starting chains and dual paths from level 30 remain in place.
+
+Validated with Lua 5.1 gameplay tests, exact half-speed checks for both lanes, and StyLua.
+Installed updates take effect with /reload. Character saves are preserved.
+
 # 0.5.0
 
 - A 100-level campaign with slower early rounds and gradually increasing speed, ball count and colours.
