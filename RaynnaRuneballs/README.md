@@ -1,0 +1,104 @@
+# Raynna's Runeballs
+
+A standalone coloured-marble shooter for WoW Forever (Interface 16001), version 0.4.0.
+Aim an arcane launcher into a winding chain and match three or more marbles
+before its leading ball reaches the void portal. Joining matching groups creates
+chain reactions and score multipliers. Every round has a distinct route: a grove
+spiral, serpentine bends, clover and switchbacks introduce the mechanics, followed
+by generated routes with increasing turns and lobes. Five colours are available
+from round one. Initial chain speed is 26 path pixels/second, rising to 42 by round five
+and 57 by round ten. There are 84 incoming marbles in round one.
+
+Alliance and Horde characters automatically receive different illustrated frames,
+launcher bases and buttons. Marbles, controls and effects use simple cartoon
+sprites with thick outlines. Ordinary balls are plain colours; only special shots
+carry ability icons.
+
+## Chain movement and specials
+
+Marbles have independent path positions. A match leaves a visible gap: the leading
+section stops, while the rear section advances and eventually pushes it. Matching
+colours across a gap pull the front section backwards; a chain combo scores only
+when the sections actually touch. Combo multipliers reward successive joins.
+
+Every seven shots, the next-ammo slot receives a special, cycling through:
+
+- **Bomb:** explodes nearby marbles within 70 path pixels of the impact.
+- **Frost:** removes the hit marble and slows the chain for four seconds.
+- **Rewind:** removes the hit marble and reverses the chain for 2.5 seconds.
+
+Specials can be swapped just like normal balls. Explosions, shards, spark bursts,
+portal rotation and danger pulses animate during play. Sounds reference native
+WoW spell and UI assets, respect the game's SFX volume, and can be disabled in
+Runeballs settings. Missing client sound references safely fall back to a UI ping.
+
+## Playing
+
+- `/rrb` or `/runeballs`: open/close. Minimap left-click also opens the game.
+- Click **Play**, aim with your mouse, and left-click the board to fire.
+- Right-click the board to exchange the loaded and next marble.
+- Match at least three adjacent balls of the same colour. Only special ammunition carries icons. The small ball below the launcher is next.
+- Click **Pause**, close the window, or press Escape to pause. Reopening does
+  not resume until Play is clicked. Combat closes and pauses the game.
+- Clear the entire incoming chain to advance. Try again restarts the failed
+  round with zero score; your personal best is retained.
+- Drag the title bar to move the window.
+
+`/rrb settings` opens **Settings → AddOns → Raynna's mods → Runeballs**.
+Choose automatic flight opening, close on landing, minimap visibility and scale.
+Minimap right-click opens settings; drag the minimap icon to reposition it.
+`/rrb center`, `/rrb show`, `/rrb hide`, `/rrb scale 90` are also available.
+Opening automatically on a flight waits for Play. Landing pauses only a window
+opened automatically. Runs, scores, window position and preferences save per
+character on normal logout/reload. This game uses no real gold or items.
+
+## Install
+
+Extract the ZIP's `RaynnaRuneballs` folder into the client's `Interface/AddOns`
+directory. Enable it in the addon list. Restart the client if a new addon is not
+discovered by reload. No other Raynna addon is required.
+
+## Development
+
+Engine.lua owns serializable simulation state; UI.lua renders pooled textures
+and advances a fixed-step simulation only while playing. Theme.lua centralizes
+styling. Core.lua handles persistence, commands, launcher and flight events.
+The unchanged version-2 settings registry is shared with the other packages.
+Version-1 saves migrate once to independent marble positions without resetting
+scores, round progress, or preferences. Closing or reloading always pauses.
+Audio.lua handles native sound selection, throttling and optional-API fallback.
+Generated art sources and prompts are retained in `ArtSource` (development only).
+Build runtime art with `python tools/build_runeballs_faction_art.py` (Pillow).
+Export exact routes with `python tools/export_runeballs_preview.py` (lupa), then
+render offline previews with `python tools/preview_runeballs.py` (Pillow).
+Tests: `python tests/test_runeballs.py` (lupa required).
+Package: `python tools/package_runeballs.py`.
+
+Automated mock checks do not replace
+verification of rendering, input and flight events in the actual client.
+
+Version 0.2.2 removes the opaque backdrop that obscured the faction artwork and
+removes decorative road characters. The interface adds cleaner typography,
+button hover/press feedback, floating match scores and a portal-threat meter.
+
+Version 0.3.0 adds saved, interruptible end-of-round animations. Defeat pulls the
+entire remaining chain into the portal in about two seconds. Victory seals the
+portal with a sparkle celebration. An animated result card then shows the score,
+best score and Retry/Next round and Close controls. Result animations lock shots;
+closing/reloading pauses them and reopening resumes them. Early rounds are slower.
+
+Version 0.3.1 removes icons from ordinary marbles, separates score labels and values,
+and cleans up text size, shadows, spacing, footer help and button typography.
+
+## Version 0.4.0
+
+New outlined cartoon typography, gold score displays, illustrated controls and
+faction launchers, brighter plain marbles, recoil/trails and reduced-motion mode.
+The shoot sound is a quiet native UI tick. Roads enter through edge tunnels;
+rounds 6, 10, 14 and every fourth round thereafter have two simultaneous chains
+and bridges. Balls beneath bridges cannot be hit until they emerge.
+A shared flight chooser supports Tower Defense 0.4.3+ and PeggleForever without
+changing Peggle settings. Manual opening stays independent.
+
+Every released update increments the TOC version, builds a matching player ZIP,
+and receives a matching vVERSION GitHub tag/release. See RELEASE.md.

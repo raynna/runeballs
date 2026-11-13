@@ -1,0 +1,15 @@
+## Interface: 16001
+## Title: Raynna's Runeballs
+## Notes: Match coloured runeballs before the chain reaches the void. Play anywhere or on flights.
+## Author: Andreas
+## Version: 0.4.0
+## SavedVariablesPerCharacter: RaynnaRuneballsDB
+SettingsRegistry.lua
+GameRegistry.lua
+Engine.lua
+Theme.lua
+Audio.lua
+Visuals.lua
+UI.lua
+Settings.lua
+Core.lua

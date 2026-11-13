@@ -1,0 +1,819 @@
+local _, A = ...
+local E = {}
+A.Engine = E
+A.media = 'Interface\\AddOns\\RaynnaRuneballs\\Media\\'
+A.colors = { { 1, 0.19, 0.15 }, { 0.15, 0.65, 1 }, { 0.28, 0.9, 0.22 }, { 1, 0.8, 0.12 }, { 0.8, 0.28, 1 } }
+A.runes = { 'I', 'II', 'III', 'IV', 'V' }
+A.realms = { 'The Emerald Grove', 'The Sunken Archive', 'The Violet Sanctum' }
+local spacing = 25
+local paths = {}
+-- Early rounds introduce distinct layouts; later rounds gain turns and lobes.
+-- Cache only the active round so an endless run cannot accumulate path tables.
+local earlyRoutes = {
+    [2] = {
+        { 55, 60 },
+        { 270, 40 },
+        { 620, 50 },
+        { 700, 130 },
+        { 590, 180 },
+        { 210, 130 },
+        { 70, 220 },
+        { 110, 400 },
+        { 360, 450 },
+        { 660, 400 },
+        { 690, 300 },
+        { 560, 280 },
+        { 490, 365 },
+        { 300, 360 },
+        { 250, 300 },
+    },
+    [3] = {
+        { 55, 420 },
+        { 80, 100 },
+        { 240, 50 },
+        { 370, 110 },
+        { 530, 55 },
+        { 700, 120 },
+        { 650, 240 },
+        { 710, 380 },
+        { 560, 440 },
+        { 400, 390 },
+        { 220, 440 },
+        { 130, 320 },
+        { 190, 215 },
+        { 275, 170 },
+        { 410, 135 },
+        { 530, 190 },
+    },
+    [4] = {
+        { 55, 70 },
+        { 660, 70 },
+        { 670, 170 },
+        { 540, 155 },
+        { 520, 340 },
+        { 660, 330 },
+        { 660, 430 },
+        { 90, 430 },
+        { 65, 320 },
+        { 235, 335 },
+        { 245, 160 },
+        { 160, 160 },
+        { 150, 250 },
+    },
+}
+function E.Path(level)
+    if paths[level] then
+        return paths[level]
+    end
+    if level < 1000 and not paths[level + 1000] then
+        paths = {}
+    end
+    local p = { length = 0 }
+    local function add(x, y)
+        if #p > 0 then
+            local prev = p[#p]
+            p.length = p.length + math.sqrt((x - prev.x) ^ 2 + (y - prev.y) ^ 2)
+        end
+        p[#p + 1] = { x = x, y = y, d = p.length }
+    end
+    local controls = earlyRoutes[level]
+    if level >= 1000 then
+        controls = {
+            { 760, 400 },
+            { 600, 400 },
+            { 450, 430 },
+            { 300, 400 },
+            { 100, 420 },
+            { 50, 280 },
+            { 180, 170 },
+            { 340, 100 },
+            { 500, 100 },
+            { 650, 180 },
+            { 620, 270 },
+            { 520, 320 },
+        }
+    elseif level >= 6 and level % 4 == 2 then
+        controls = {
+            { 0, 100 },
+            { 150, 100 },
+            { 300, 80 },
+            { 520, 110 },
+            { 680, 80 },
+            { 720, 210 },
+            { 600, 320 },
+            { 440, 380 },
+            { 250, 380 },
+            { 100, 300 },
+            { 120, 200 },
+            { 250, 150 },
+        }
+    end
+    if controls and (level >= 1000 or (level >= 6 and level % 4 == 2)) then
+        local changed = {}
+        for i, point in ipairs(controls) do
+            changed[i] = { point[1], point[2] }
+            if i > 1 then
+                changed[i][2] = point[2] + math.sin((level % 1000) * 0.61 + i) * 10
+            end
+        end
+        controls = changed
+    end
+    if level == 1 then
+        -- Compensate for the board's 0.86 vertical display scale: this is a
+        -- circular inward spiral on screen, rather than an elliptical loop.
+        for i = 0, 900 do
+            local t = i / 900
+            local radius = 190 - 108 * t
+            local angle = -math.pi * 0.8 + t * math.pi * 3.6
+            add(380 + radius * math.cos(angle), 250 + radius * math.sin(angle) / 0.86)
+        end
+    elseif controls then
+        for segment = 1, #controls - 1 do
+            local a = controls[math.max(1, segment - 1)]
+            local b = controls[segment]
+            local c = controls[segment + 1]
+            local d = controls[math.min(#controls, segment + 2)]
+            for step = 0, 30 do
+                if segment == 1 or step > 0 then
+                    local t = step / 30
+                    local function axis(k)
+                        return 0.5
+                            * (
+                                (2 * b[k])
+                                + (-a[k] + c[k]) * t
+                                + (2 * a[k] - 5 * b[k] + 4 * c[k] - d[k]) * t * t
+                                + (-a[k] + 3 * b[k] - 3 * c[k] + d[k]) * t * t * t
+                            )
+                    end
+                    add(axis(1), axis(2))
+                end
+            end
+        end
+    else
+        local turns = level == 1 and 1.215 or math.min(2.05, 1.4 + level * 0.045)
+        local phase = level == 1 and -math.pi * 0.8 or level * 0.73
+        local lobes = 3 + level % 4
+        for i = 0, 900 do
+            local t = i / 900
+            local angle = phase + t * math.pi * 2 * turns
+            local ripple = level == 1 and 0
+                or math.sin(angle * lobes + level) * math.min(18, level * 1.5) * math.sin(t * math.pi)
+            add(
+                380 + (330 - t * 205 + ripple) * math.cos(angle),
+                250 + (210 - t * 120 + ripple * 0.6) * math.sin(angle)
+            )
+        end
+    end
+    -- Extend backwards along the entry tangent to the board boundary.
+    local first, second = p[1], p[2]
+    if first.x > 0.1 and first.x < 759.9 and first.y > 0.1 and first.y < 499.9 then
+        local dx, dy = first.x - second.x, first.y - second.y
+        local length = math.sqrt(dx * dx + dy * dy)
+        dx, dy = dx / length, dy / length
+        local reach = math.huge
+        if dx < 0 then
+            reach = math.min(reach, -first.x / dx)
+        elseif dx > 0 then
+            reach = math.min(reach, (760 - first.x) / dx)
+        end
+        if dy < 0 then
+            reach = math.min(reach, -first.y / dy)
+        elseif dy > 0 then
+            reach = math.min(reach, (500 - first.y) / dy)
+        end
+        local extended = { length = p.length + reach, entryLength = reach }
+        local count = math.ceil(reach / 4)
+        for i = 0, count - 1 do
+            local distance = i * reach / count
+            extended[#extended + 1] =
+                { x = first.x + dx * (reach - distance), y = first.y + dy * (reach - distance), d = distance }
+        end
+        for _, point in ipairs(p) do
+            extended[#extended + 1] = { x = point.x, y = point.y, d = point.d + reach }
+        end
+        p = extended
+    else
+        p.entryLength = 0
+    end
+    paths[level] = p
+    return p
+end
+function E.MapName(level)
+    local names = {
+        'The Emerald Grove',
+        'Serpents of the Barrens',
+        'The Shattered Clover',
+        'Blackrock Switchbacks',
+        'The Coiled Sanctum',
+        'Felwood Thorns',
+        'The Sunwell Labyrinth',
+        'The Twisting Nether',
+    }
+    return names[(level - 1) % #names + 1] .. (level > #names and ' ' .. math.ceil(level / #names) or '')
+end
+function E.Point(level, distance)
+    local p = E.Path(level)
+    distance = math.max(0, math.min(p.length, distance))
+    local lo, hi = 1, #p
+    while hi - lo > 1 do
+        local mid = math.floor((lo + hi) / 2)
+        if p[mid].d < distance then
+            lo = mid
+        else
+            hi = mid
+        end
+    end
+    local a, b = p[lo], p[hi]
+    local f = (distance - a.d) / (b.d - a.d)
+    return a.x + (b.x - a.x) * f, a.y + (b.y - a.y) * f
+end
+function E.Init(db)
+    db.options = db.options or {}
+    db.appearance = db.appearance or {}
+    db.best = db.best or 0
+    db.level = db.level or 1
+    local r = db.run
+    if r then
+        if (r.version or 1) < 2 then
+            for i, ball in ipairs(r.balls) do
+                ball.d = r.head - (i - 1) * spacing
+            end
+            r.version = 2
+        end
+        if not r.pathVersion and r.level then
+            local offset = E.Path(r.route or r.level).entryLength or 0
+            for _, ball in ipairs(r.balls) do
+                ball.d = ball.d + offset
+            end
+            r.head = (r.head or 0) + offset
+            r.pathVersion = 1
+        end
+        if r.other then
+            E.Init({ run = r.other })
+        end
+        r.effects = r.effects or {}
+        r.shotsFired = r.shotsFired or 0
+        r.paused = true
+    end
+end
+function E.Distance(run, index)
+    return run.balls[index].d
+end
+function E.Speed(run)
+    return 26 + math.min(run.level - 1, 4) * 4 + math.max(0, math.min(run.level, 30) - 5) * 3
+end
+local function pick(run)
+    local available = {}
+    if run.remaining > 0 or (run.other and run.other.remaining > 0) then
+        for i = 1, run.colorCount do
+            available[i] = i
+        end
+    else
+        local seen = {}
+        for _, ball in ipairs(run.balls) do
+            if not seen[ball.color] then
+                available[#available + 1] = ball.color
+                seen[ball.color] = true
+            end
+        end
+        if run.other then
+            for _, ball in ipairs(run.other.balls) do
+                if not seen[ball.color] then
+                    available[#available + 1] = ball.color
+                    seen[ball.color] = true
+                end
+            end
+        end
+    end
+    return available[math.random(math.max(1, #available))] or 1
+end
+local function newLane(db, level, score)
+    level = level or db.level
+    local run = {
+        version = 2,
+        pathVersion = 1,
+        level = level,
+        score = score or 0,
+        balls = {},
+        remaining = 76 + math.min(level, 25) * 8,
+        colorCount = 5,
+        head = spacing * 21,
+        effects = {},
+        shotsFired = 0,
+        status = 'playing',
+        paused = true,
+        cooldown = 0,
+    }
+    db.run = run
+    for i = 1, 22 do
+        run.balls[i] = { color = math.random(run.colorCount), d = run.head - (i - 1) * spacing }
+        run.remaining = run.remaining - 1
+    end
+    run.loaded, run.next = pick(run), pick(run)
+    return run
+end
+function E.NewRun(db, level, score)
+    local r = newLane(db, level, score)
+    if r.level >= 6 and r.level % 4 == 2 then
+        local holder = { level = r.level }
+        local other = newLane(holder, r.level, 0)
+        other.route = r.level + 1000
+        r.dual, other.dual = true, true
+        local total = 76 + math.min(r.level, 25) * 8
+        r.remaining = math.floor(total / 2) - #r.balls
+        other.remaining = total - math.floor(total / 2) - #other.balls
+        r.other = other
+    end
+    return r
+end
+function E.Route(run)
+    return run.route or run.level
+end
+-- Every marble owns its path distance. Removing a group leaves its neighbours
+-- untouched; contact physics, rather than index renumbering, closes the gap.
+local function touching(a, b)
+    return a and b and a.d - b.d <= spacing + 0.1
+end
+local function removeGroup(run, first, last, combo, kind)
+    combo = combo or 1
+    local count = last - first + 1
+    local center = run.balls[math.floor((first + last) / 2)]
+    local x, y = E.Point(E.Route(run), center.d)
+    run.burst = { x = x, y = y, age = 0, count = count, combo = combo, kind = kind }
+    for i = last, first, -1 do
+        local b = run.balls[i]
+        local bx, by = E.Point(E.Route(run), b.d)
+        if #run.effects >= 32 then
+            table.remove(run.effects, 1)
+        end
+        run.effects[#run.effects + 1] =
+            { x = bx, y = by, age = 0, color = b.color, kind = b == center and (kind or 'Spark') or 'Spark' }
+        table.remove(run.balls, i)
+    end
+    if run.balls[first] and first > 1 then
+        run.balls[first].joinCombo = combo + 1
+    end
+    run.score = run.score + count * 100 * combo
+    run.head = run.balls[1] and run.balls[1].d or 0
+end
+function E.Match(run, index, combo)
+    local b = run.balls[index]
+    if not b then
+        return 0
+    end
+    local first, last = index, index
+    while
+        first > 1
+        and touching(run.balls[first - 1], run.balls[first])
+        and run.balls[first - 1].color == b.color
+    do
+        first = first - 1
+    end
+    while
+        run.balls[last + 1]
+        and touching(run.balls[last], run.balls[last + 1])
+        and run.balls[last + 1].color == b.color
+    do
+        last = last + 1
+    end
+    if last - first + 1 < 3 then
+        return 0
+    end
+    removeGroup(run, first, last, combo or 1)
+    if A.GameSound then
+        A.GameSound((combo or 1) > 1 and 'Combo' or 'Match', combo)
+    end
+    return combo or 1
+end
+function E.Insert(run, index, color)
+    local rear = run.balls[index]
+    local front = run.balls[index - 1]
+    local d = rear and rear.d + spacing or (front and front.d - spacing or 0)
+    -- Inserting at the entrance must never hide a marble at a negative distance.
+    d = math.max(0, d)
+    table.insert(run.balls, index, { color = color, d = d })
+    for i = index - 1, 1, -1 do
+        run.balls[i].d = math.max(run.balls[i].d, run.balls[i + 1].d + spacing)
+    end
+    run.head = run.balls[1].d
+    return E.Match(run, index)
+end
+function E.Special(run, index, kind)
+    if A.GameSound then
+        A.GameSound(kind)
+    end
+    local first, last = index, index
+    if kind == 'Bomb' then
+        local d = run.balls[index].d
+        while first > 1 and run.balls[first - 1].d - d <= 70 do
+            first = first - 1
+        end
+        while run.balls[last + 1] and d - run.balls[last + 1].d <= 70 do
+            last = last + 1
+        end
+    elseif kind == 'Frost' then
+        run.slow = 4
+    elseif kind == 'Rewind' then
+        run.reverse = 2.5
+    end
+    removeGroup(
+        run,
+        first,
+        last,
+        1,
+        kind == 'Bomb' and 'Explosion' or kind == 'Frost' and 'Shatter' or 'Portal'
+    )
+end
+local function advanceChain(run, dt)
+    local balls = run.balls
+    if #balls == 0 then
+        return
+    end
+    local speed = E.Speed(run) * (run.slow > 0 and 0.28 or 1)
+    if run.reverse > 0 then
+        local delta = 135 * dt
+        for _, b in ipairs(balls) do
+            b.d = b.d - delta
+        end
+        return
+    end
+    -- Work from the entrance towards the portal. Only the rearmost section
+    -- drives itself; other sections wait for a push or retract to matching ends.
+    local groups = {}
+    local first = 1
+    for i = 1, #balls do
+        if not touching(balls[i], balls[i + 1]) then
+            groups[#groups + 1] = { first = first, last = i }
+            first = i + 1
+        end
+    end
+    local contacts = {}
+    for g = #groups, 1, -1 do
+        local group = groups[g]
+        local delta = speed * dt
+        if g < #groups then
+            local rear = balls[group.last + 1]
+            local front = balls[group.last]
+            local same = front.color == rear.color
+            delta = same and -210 * dt or 0
+            local minimum = rear.d + spacing - front.d
+            if delta <= minimum then
+                delta = minimum
+                if rear.joinCombo then
+                    contacts[#contacts + 1] = { ball = rear, combo = rear.joinCombo }
+                end
+                rear.joinCombo = nil
+            end
+        end
+        for i = group.first, group.last do
+            balls[i].d = balls[i].d + delta
+        end
+    end
+    for _, contact in ipairs(contacts) do
+        for i, b in ipairs(balls) do
+            if b == contact.ball then
+                E.Match(run, i, contact.combo)
+                break
+            end
+        end
+    end
+end
+function E.Swap(run)
+    if run and run.status == 'playing' and not run.paused then
+        run.loaded, run.next = run.next, run.loaded
+        run.loadedKind, run.nextKind = run.nextKind, run.loadedKind
+        if A.GameSound then
+            A.GameSound('Swap')
+        end
+    end
+end
+function E.Fire(run, x, y)
+    if not run or run.paused or run.status ~= 'playing' or run.shot or run.cooldown > 0 then
+        return false
+    end
+    local dx, dy = x - 380, y - 250
+    local length = math.sqrt(dx * dx + dy * dy)
+    if length < 15 then
+        return false
+    end
+    run.shot = {
+        x = 380,
+        y = 250,
+        vx = dx / length * 1040,
+        vy = dy / length * 1040,
+        color = run.loaded,
+        kind = run.loadedKind,
+    }
+    run.loaded, run.next = run.next, pick(run)
+    run.loadedKind = run.nextKind
+    run.shotsFired = run.shotsFired + 1
+    run.nextKind = nil
+    if run.shotsFired % 7 == 0 then
+        run.nextKind = ({ 'Bomb', 'Frost', 'Rewind' })[(math.floor(run.shotsFired / 7) - 1) % 3 + 1]
+    end
+    run.cooldown = 0.10
+    if A.GameSound then
+        A.GameSound('Shoot')
+    end
+    return true
+end
+function E.Animate(r, dt)
+    for i = #r.effects, 1, -1 do
+        r.effects[i].age = r.effects[i].age + dt
+        if r.effects[i].age > 0.6 then
+            table.remove(r.effects, i)
+        end
+    end
+    if r.burst then
+        r.burst.age = r.burst.age + dt
+        if r.burst.age > 0.55 then
+            r.burst = nil
+        end
+    end
+end
+-- Endings are saved simulation state: closing pauses the cinematic, reopening
+-- resumes it. Input remains locked until the result card has appeared.
+function E.BeginEnding(r, won)
+    r.paused = false
+    r.shot = nil
+    r.ending = { age = 0, phase = won and 'celebrate' or 'drain', won = won, popupAge = 0 }
+    if not won then
+        local tail = r.balls[#r.balls] and r.balls[#r.balls].d or 0
+        for i = 1, r.remaining do
+            r.balls[#r.balls + 1] = { color = math.random(r.colorCount), d = tail - i * spacing }
+        end
+        r.remaining = 0
+        local last = r.balls[#r.balls]
+        r.ending.speed = math.max(700, (E.Path(E.Route(r)).length - (last and last.d or 0) + 35) / 2)
+    end
+end
+function E.EndStep(r, dt)
+    local ending = r.ending
+    if not ending or ending.done or r.paused then
+        return
+    end
+    E.Animate(r, dt)
+    ending.age = ending.age + dt
+    if ending.phase == 'drain' then
+        local finish = E.Path(E.Route(r)).length
+        for i = #r.balls, 1, -1 do
+            local b = r.balls[i]
+            b.d = b.d + ending.speed * dt
+            if b.d >= finish + 18 then
+                table.remove(r.balls, i)
+            end
+        end
+        r.head = r.balls[1] and r.balls[1].d or finish
+        if #r.balls == 0 then
+            ending.phase = 'result'
+        end
+    elseif ending.phase == 'celebrate' then
+        local beat = math.floor(ending.age / 0.12)
+        if beat ~= (ending.beat or -1) then
+            ending.beat = beat
+            local angle = beat * 2.4
+            r.effects[#r.effects + 1] = {
+                x = 380 + math.cos(angle) * 130,
+                y = 250 + math.sin(angle) * 110,
+                age = 0,
+                color = beat % 5 + 1,
+                kind = 'Spark',
+            }
+        end
+        if ending.age >= 1.1 then
+            ending.phase = 'result'
+        end
+    else
+        ending.popupAge = math.min(0.5, ending.popupAge + dt)
+        if ending.popupAge >= 0.5 and #r.effects == 0 then
+            ending.done = true
+            r.paused = true
+        end
+    end
+end
+local function advance(db, dt)
+    local r = db.run
+    if not r then
+        return
+    end
+    dt = math.min(dt, 0.05)
+    if r.status ~= 'playing' then
+        if r.ending then
+            E.EndStep(r, dt)
+        else
+            E.Animate(r, dt)
+        end
+        return
+    end
+    if r.paused then
+        return
+    end
+    if r.cleared then
+        E.Animate(r, dt)
+        return
+    end
+    E.Animate(r, dt)
+    r.cooldown = math.max(0, r.cooldown - dt)
+    r.slow = math.max(0, (r.slow or 0) - dt)
+    r.reverse = math.max(0, (r.reverse or 0) - dt)
+    advanceChain(r, dt)
+    while r.remaining > 0 and (#r.balls == 0 or r.balls[#r.balls].d >= spacing) do
+        local d = #r.balls == 0 and 0 or r.balls[#r.balls].d - spacing
+        r.balls[#r.balls + 1] = { color = math.random(r.colorCount), d = d }
+        r.remaining = r.remaining - 1
+    end
+    r.head = r.balls[1] and r.balls[1].d or 0
+end
+
+local function finish(db, r)
+    db.best = math.max(db.best, r.score)
+    if #r.balls == 0 and r.remaining == 0 then
+        if r.dual then
+            r.cleared = true
+        else
+            if A.GameSound then
+                A.GameSound('Win')
+            end
+            r.status = 'won'
+            E.BeginEnding(r, true)
+            db.level = math.max(db.level, r.level + 1)
+        end
+    elseif #r.balls > 0 and r.head >= E.Path(E.Route(r)).length then
+        if A.GameSound then
+            A.GameSound('Lose')
+        end
+        r.status = 'lost'
+        E.BeginEnding(r, false)
+    end
+end
+
+local function shoot(r, dt)
+    local shot = r.shot
+    if shot then
+        -- Swept collision prevents fast shots tunnelling through a 25px marble.
+        local dx, dy = shot.vx * dt, shot.vy * dt
+        local hit, hitT, hitLane
+        for _, lane in ipairs(r.other and { r, r.other } or { r }) do
+            for i = 1, #lane.balls do
+                local x, y = E.Point(E.Route(lane), lane.balls[i].d)
+                local ox, oy = shot.x - x, shot.y - y
+                local aa = dx * dx + dy * dy
+                local bb = 2 * (ox * dx + oy * dy)
+                local cc = ox * ox + oy * oy - 23 * 23
+                local disc = bb * bb - 4 * aa * cc
+                if lane.balls[i].d >= 0 and not E.Hidden(lane, lane.balls[i].d) and aa > 0 and disc >= 0 then
+                    local t = cc <= 0 and 0 or (-bb - math.sqrt(disc)) / (2 * aa)
+                    if t >= 0 and t <= 1 and (not hitT or t < hitT) then
+                        hit, hitT, hitLane = i, t, lane
+                    end
+                end
+            end
+        end
+        if hit then
+            shot.x, shot.y = shot.x + dx * hitT, shot.y + dy * hitT
+            local d = hitLane.balls[hit].d
+            local x, y = E.Point(E.Route(hitLane), d)
+            local tx, ty = E.Point(E.Route(hitLane), d + 2)
+            if d >= E.Path(E.Route(hitLane)).length - 2 then
+                local px, py = E.Point(E.Route(hitLane), d - 2)
+                tx, ty = x + (x - px), y + (y - py)
+            end
+            local index = ((shot.x - x) * (tx - x) + (shot.y - y) * (ty - y) >= 0) and hit or hit + 1
+            if shot.kind then
+                E.Special(hitLane, hit, shot.kind)
+            else
+                if A.GameSound then
+                    A.GameSound('Hit')
+                end
+                E.Insert(hitLane, index, shot.color)
+            end
+            r.shot = nil
+        else
+            shot.x, shot.y = shot.x + dx, shot.y + dy
+            if shot.x < 0 or shot.x > 760 or shot.y < 0 or shot.y > 500 then
+                r.shot = nil
+            end
+        end
+    end
+end
+
+function E.Step(db, dt)
+    local r = db.run
+    if not r or (r.paused and (r.ending or r.status == 'playing')) then
+        return
+    end
+    dt = math.min(dt, 0.05)
+    if not r.other then
+        advance(db, dt)
+        if r.status == 'playing' and not r.paused then
+            shoot(r, dt)
+            finish(db, r)
+        end
+        return
+    end
+    local other = r.other
+    other.paused = r.paused
+    local holder = { run = other, best = 0, level = r.level }
+    advance(holder, dt)
+    advance(db, dt)
+    if r.status == 'playing' and not r.paused then
+        shoot(r, dt)
+        r.score = r.score + other.score
+        other.score = 0
+        finish(holder, other)
+        finish(db, r)
+        if r.status == 'lost' or other.status == 'lost' then
+            if r.status ~= 'lost' then
+                r.status = 'lost'
+                E.BeginEnding(r, false)
+            end
+            if other.status ~= 'lost' then
+                other.status = 'lost'
+                E.BeginEnding(other, false)
+            end
+        elseif r.cleared and other.cleared then
+            r.status = 'won'
+            E.BeginEnding(r, true)
+            other.status = 'won'
+            other.ending = { phase = 'result', done = true, won = true, popupAge = 0.5, age = 2 }
+            db.level = math.max(db.level, r.level + 1)
+            if A.GameSound then
+                A.GameSound('Win')
+            end
+        end
+    end
+    if r.ending and not r.ending.won and #other.balls > 0 then
+        r.ending.phase = 'drain'
+        r.ending.popupAge = 0
+        r.ending.done = nil
+        r.paused = false
+    end
+end
+
+local crossingLevel, crossings
+function E.Crossings(level)
+    if crossingLevel == level then
+        return crossings
+    end
+    crossingLevel, crossings = level, {}
+    if level < 6 or level % 4 ~= 2 then
+        return crossings
+    end
+    local a, b = E.Path(level), E.Path(level + 1000)
+    for d1 = 0, a.length - 20, 20 do
+        local x1, y1 = E.Point(level, d1)
+        local x2, y2 = E.Point(level, d1 + 20)
+        local ax, ay = x2 - x1, y2 - y1
+        for d2 = 0, b.length - 20, 20 do
+            local x3, y3 = E.Point(level + 1000, d2)
+            local x4, y4 = E.Point(level + 1000, d2 + 20)
+            local bx, by = x4 - x3, y4 - y3
+            local determinant = ax * by - ay * bx
+            if math.abs(determinant) > 1 then
+                local cx, cy = x3 - x1, y3 - y1
+                local t = (cx * by - cy * bx) / determinant
+                local u = (cx * ay - cy * ax) / determinant
+                if t >= 0 and t <= 1 and u >= 0 and u <= 1 then
+                    local x, y = x1 + ax * t, y1 + ay * t
+                    local unique = true
+                    for _, cross in ipairs(crossings) do
+                        if (x - cross.x) ^ 2 + (y - cross.y) ^ 2 < 2500 then
+                            unique = false
+                        end
+                    end
+                    if unique then
+                        crossings[#crossings + 1] = {
+                            x = x,
+                            y = y,
+                            over = d1 + 20 * t,
+                            under = d2 + 20 * u,
+                            angle = math.atan2(ay * 0.86, ax),
+                        }
+                    end
+                end
+            end
+        end
+    end
+    return crossings
+end
+function E.Hidden(run, distance)
+    if not run.route then
+        return false
+    end
+    for _, cross in ipairs(E.Crossings(run.level)) do
+        if math.abs(distance - cross.under) < 25 then
+            return true
+        end
+    end
+    return false
+end
+function E.Pressure(run)
+    local value = run.head / E.Path(E.Route(run)).length
+    if run.other then
+        value = math.max(value, run.other.head / E.Path(E.Route(run.other)).length)
+    end
+    return math.max(0, math.min(1, value))
+end
+function E.Remaining(run)
+    return #run.balls + run.remaining + (run.other and (#run.other.balls + run.other.remaining) or 0)
+end

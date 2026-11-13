@@ -1,0 +1,14 @@
+Raynna's Runeballs brings colourful, Zuma-inspired marble-shooting action to World of Warcraft. Play during a flight or open it anytime for a quick challenge!
+
+Match three or more balls to stop the chain from reaching the portal. Close gaps to trigger combos, build your score, and use Bomb, Frost and Rewind shots to turn the tide.
+
+Features
+- Different winding maps with increasing difficulty, tunnel entrances and later dual-path rounds with bridges.
+- Automatic Horde or Alliance artwork, bright cartoon marbles and animated effects.
+- WoW sound effects, personal best scores and saved progress per character.
+- Optional flight opening, adjustable scale, sound and reduced-motion settings.
+- A flight-game chooser when supported games such as Raynna's Tower Defense or Peggle are also enabled.
+
+Type /rrb or /runeballs to play, or use the minimap button. Left-click to shoot and right-click to swap your next ball.
+
+Made for WoW Forever (Interface 16001). No other Raynna addons required. Tower Defense needs version 0.4.3 or newer for the shared flight chooser; PeggleForever is detected automatically.

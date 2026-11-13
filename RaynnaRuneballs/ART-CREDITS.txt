@@ -1,0 +1,25 @@
+Faction frame illustrations and cartoon sprite atlas generated with the built-in
+image_gen tool, November 2026, based on the user's visual direction. Source PNGs
+and prompts are retained in ArtSource in the development workspace.
+Runtime atlas conversion: tools/build_runeballs_faction_art.py.
+Road segment and aiming dot are original procedural artwork.
+No Zuma or Luxor artwork is redistributed. Warcraft faction imagery belongs to
+its respective rights holders. This fan addon is not an official Blizzard product.
+
+Native WoW UI textures and sounds are referenced from the installed client;
+no extracted client audio files are bundled. Spell sound FileDataIDs are
+from wowdev's verified listfile release 202611122246:
+https://github.com/wowdev/wow-listfile/releases/tag/202611122246
+Shoot: SOUNDKIT IG_MAINMENU_OPTION_CHECKBOX_ON (856), quiet UI tick.
+Hit: 568461 sound/spells/fireballimpacta.ogg
+Match: 568678 sound/spells/arcaneexplosion.ogg
+Bomb: 568528 sound/spells/smallexplosions_generic_01.ogg
+Frost: 569378 sound/spells/frostnova.ogg
+Rewind: 569735 sound/spells/teleport.ogg
+Combo, swap, win and lose use native SOUNDKIT entries, with client UI fallbacks.
+
+Bundled Lilita One and Baloo 2 fonts are from google/fonts, licensed under SIL
+Open Font License 1.1. Both license notices are in Media/Fonts. RuneballsLabels.ttf
+is a renamed static weight-800 instance of Baloo 2. The variable source is retained
+in ArtSource/Fonts. Font sources: https://github.com/google/fonts/tree/main/ofl/lilitaone
+and https://github.com/google/fonts/tree/main/ofl/baloo2
