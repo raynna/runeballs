@@ -1,3 +1,11 @@
+# 0.5.22
+
+- Softened special-ball light spill from 70–100% opacity to 38–55%, with a smaller pulse footprint (54–58px on chain balls).
+- Applied the same brightness reduction to the loaded special ball, with a proportionately smaller launcher glow. Softened chain outline rings too.
+- Colour matching, pulse motion and ability mechanics are unchanged.
+
+Lua 5.1 regression tests and StyLua passed; unchanged faction layouts reviewed. Use /reload. Saves are untouched; in-game brightness needs user review.
+
 # 0.5.21
 
 - Loaded special ammunition in the central launcher now uses the same coloured light-spill texture and pulse as special chain balls, sized for the larger loaded marble.

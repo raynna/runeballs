@@ -198,9 +198,9 @@ function V.Draw(r, active)
                 move(aura.ring, x, y)
                 aura.glow:SetVertexColor(unpack(color))
                 aura.ring:SetVertexColor(unpack(color))
-                aura.glow:SetSize(64 + pulse * 8, 64 + pulse * 8)
-                aura.glow:SetAlpha(0.7 + pulse * 0.3)
-                aura.ring:SetAlpha(0.35 + pulse * 0.35)
+                aura.glow:SetSize(54 + pulse * 4, 54 + pulse * 4)
+                aura.glow:SetAlpha(0.38 + pulse * 0.17)
+                aura.ring:SetAlpha(0.3 + pulse * 0.2)
                 aura.glow:Show()
                 aura.ring:Show()
                 for i, spark in ipairs(aura.sparks) do
@@ -345,8 +345,8 @@ function V.Draw(r, active)
         move(ammoLight, 380 - aimX * kick, 250 - aimY * kick)
         ammoLight:SetVertexColor(unpack(A.colors[r.loaded]))
         local pulse = moving and (0.5 + math.sin(timer * 3) * 0.5) or 0.5
-        ammoLight:SetSize(78 + pulse * 8, 78 + pulse * 8)
-        ammoLight:SetAlpha(0.7 + pulse * 0.3)
+        ammoLight:SetSize(66 + pulse * 4, 66 + pulse * 4)
+        ammoLight:SetAlpha(0.38 + pulse * 0.17)
     end
     local ability = shot and shot.kind or r.loadedKind
     specialGlow:SetShown(ability ~= nil)
