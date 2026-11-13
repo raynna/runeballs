@@ -529,3 +529,22 @@ SlashCmdList.RAYNNARUNEBALLS('demo 42');assert(A.db.run.level==42)
 SlashCmdList.RAYNNARUNEBALLS('demo off')
 """)
 print('PASS: developer demo all 100 rounds, name restriction, validation and campaign isolation')
+
+lua.execute("""
+for _,name in ipairs({'Its Raynna','Its-Raynna','ITS RAYNNA','Its'..string.char(194,160)..'Raynna'}) do
+ UnitName=function() return name end
+ SlashCmdList.RAYNNARUNEBALLS('demo 7');assert(A.db.run.level==7)
+ SlashCmdList.RAYNNARUNEBALLS('demo off')
+end
+UnitName=function() return 'Its','Raynna' end
+SlashCmdList.RAYNNARUNEBALLS('demo 8');assert(A.db.run.level==8)
+SlashCmdList.RAYNNARUNEBALLS('demo off')
+UnitName=function() return 'Its' end
+CharacterFrameTitleText=CreateFrame('FontString');CharacterFrameTitleText:SetText('Its Raynna')
+SlashCmdList.RAYNNARUNEBALLS('demo 9');assert(A.db.run.level==9)
+SlashCmdList.RAYNNARUNEBALLS('demo off')
+CharacterFrameTitleText=nil
+local saved=A.db
+UnitName=function() return 'Someone Else' end
+SlashCmdList.RAYNNARUNEBALLS('demo 10');assert(A.db==saved)
+""")

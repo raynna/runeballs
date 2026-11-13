@@ -138,10 +138,39 @@ events:SetScript('OnEvent', function(_, event, name)
 end)
 -- Demo state is session-only; the real SavedVariables table keeps campaign data.
 local campaignDB
+local function developerIdentity()
+    local seen = {}
+    local function matches(value)
+        if type(value) ~= 'string' then
+            return false
+        end
+        seen[#seen + 1] = value
+        -- Forever display names may contain surname separators or UTF-8 spaces.
+        value = value:gsub('|c%x%x%x%x%x%x%x%x', ''):gsub('|r', '')
+        return value:lower():gsub('[^a-z]', '') == 'itsraynna'
+    end
+    local first, second = UnitName('player')
+    if matches(first) or matches((first or '') .. ' ' .. (second or '')) then
+        return true
+    end
+    if UnitFullName then
+        first, second = UnitFullName('player')
+        if matches(first) or matches((first or '') .. ' ' .. (second or '')) then
+            return true
+        end
+    end
+    if GetUnitName and matches(GetUnitName('player', false)) then
+        return true
+    end
+    if CharacterFrameTitleText and matches(CharacterFrameTitleText:GetText()) then
+        return true
+    end
+    return false, table.concat(seen, ' / ')
+end
 local function demo(value)
-    local name = (UnitName('player') or ''):lower():gsub('[%s%-]+', '')
-    if name ~= 'itsraynna' then
-        print('Runeballs: demo commands are restricted to Its Raynna.')
+    local allowed, identity = developerIdentity()
+    if not allowed then
+        print('Runeballs 0.5.8: demo restricted to Its Raynna. Detected: [' .. identity .. ']')
         return
     end
     if value == 'off' then

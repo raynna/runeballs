@@ -1,3 +1,12 @@
+# 0.5.8
+
+- Developer identity matching handles split name/surname returns, UTF-8 spaces and character-panel display names as a fallback.
+- If access is rejected, the message includes version and detected names for diagnosis.
+- Demo scope remains limited to Its Raynna; campaign isolation is unchanged.
+
+Lua 5.1 tests cover space/hyphen/case variants, split names, nonbreaking spaces, character-panel fallback and rejection of other names. StyLua passed; unchanged faction layouts retain their reviewed previews.
+Reload, open the character panel once if needed, then /rrb demo 100.
+
 # 0.5.7
 
 - Added an opaque faction-stone footer behind the full bottom controls, covering the gap below the original illustration.
