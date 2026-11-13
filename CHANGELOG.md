@@ -1,3 +1,12 @@
+# 0.5.23
+
+- Added a six-colour Rainbow wildcard ball to ammo and incoming chain spawns.
+- A Rainbow completes a touching group of three or more of any one colour. Red–Rainbow–Red matches; Red–Rainbow–Blue does not. When multiple matches are possible, the larger single-colour group is chosen.
+- Rainbow participates in gap retraction/contact combos and has a gently cycling light; reduced motion uses a steady pearl glow.
+- Total special chance stays 3%, now shared equally by Bomb, Frost, Rewind and Rainbow (0.75% each overall).
+
+Lua 5.1 tests cover all six wildcard matches, mixed-colour rejection, gaps, largest-group selection and shared probability. StyLua passed; sprite and unchanged faction layouts reviewed. Use /reload; restart WoW if the new texture does not load. Saves are preserved.
+
 # 0.5.22
 
 - Softened special-ball light spill from 70–100% opacity to 38–55%, with a smaller pulse footprint (54–58px on chain balls).

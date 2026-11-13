@@ -87,7 +87,7 @@ local random=math.random
 for _,case in ipairs({{roll=3,kind=1,expected='Bomb'},{roll=4},{roll=1,kind=3,expected='Rewind'},{roll=100},{roll=2,kind=2,expected='Frost'}}) do
  math.random=function(n)
   if n==100 then return case.roll end
-  if n==3 then return case.kind or 1 end
+  if n==4 then return case.kind or 1 end
   return 1
  end
  r.shot=nil;r.cooldown=0;assert(E.Fire(r,10,10))
@@ -753,3 +753,28 @@ for i=1,3 do assert(light.tint[i]==A.colors[5][i]) end
 r.loadedKind=nil;A.Draw();assert(not light:IsShown(),'ordinary loaded ball has no special light')
 r.loadedKind='Bomb';A.Draw();A.Close();assert(not light:IsShown())
 """)
+
+lua.execute("""
+local E=A.Engine;local db={};E.Init(db)
+local function chain(balls)
+ local r=E.NewRun(db,1);r.remaining=0;r.balls=balls;r.paused=false;return r
+end
+for color=1,6 do
+ local r=chain({{color=color,d=350},{color=6,kind='Rainbow',d=325},{color=color,d=300}})
+ assert(E.Match(r,2)==1 and #r.balls==0,'rainbow bridges any same-colour pair')
+end
+local r=chain({{color=1,d=350},{color=6,kind='Rainbow',d=325},{color=2,d=300}})
+assert(E.Match(r,2)==0 and #r.balls==3,'rainbow does not mix different colours')
+r=chain({{color=1,d=350},{color=6,kind='Rainbow',d=325},{color=1,d=250}})
+assert(E.Match(r,2)==0,'wildcard respects gaps')
+for i=1,100 do E.Step(db,.01) end
+assert(#r.balls==0,'wildcard closes a matching gap and triggers the contact match')
+r=chain({{color=1,d=400},{color=1,d=375},{color=6,kind='Rainbow',d=350},{color=2,d=325},{color=2,d=300},{color=2,d=275}})
+assert(E.Match(r,3)==1 and #r.balls==2 and r.balls[1].color==1,'wildcard chooses largest single-colour group')
+local random=math.random
+math.random=function(n) return n==100 and 3 or 4 end
+assert(E.RollSpecial()=='Rainbow','fourth special within existing probability gate')
+math.random=random
+""")
+assert((ADDON/'Media/Rainbow.tga').exists())
+print('PASS: rainbow wildcard colours, mixed-colour rejection, gaps and shared rarity')

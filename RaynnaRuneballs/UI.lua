@@ -159,7 +159,7 @@ local function drawRoad(level)
     end
 end
 local function shotArt(color, kind)
-    return A.media .. (kind and kind .. color or 'Ball' .. color) .. '.tga'
+    return A.media .. (kind == 'Rainbow' and 'Rainbow' or kind and kind .. color or 'Ball' .. color) .. '.tga'
 end
 function A.Draw()
     if not frame then

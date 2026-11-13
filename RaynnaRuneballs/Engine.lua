@@ -381,7 +381,7 @@ local function pick(run)
 end
 function E.RollSpecial()
     if math.random(100) <= 3 then
-        return ({ 'Bomb', 'Frost', 'Rewind' })[math.random(3)]
+        return ({ 'Bomb', 'Frost', 'Rewind', 'Rainbow' })[math.random(4)]
     end
 end
 local function newLane(db, level, score)
@@ -470,20 +470,28 @@ function E.Match(run, index, combo)
     if not b then
         return 0
     end
-    local first, last = index, index
-    while
-        first > 1
-        and touching(run.balls[first - 1], run.balls[first])
-        and run.balls[first - 1].color == b.color
-    do
-        first = first - 1
-    end
-    while
-        run.balls[last + 1]
-        and touching(run.balls[last], run.balls[last + 1])
-        and run.balls[last + 1].color == b.color
-    do
-        last = last + 1
+    local first, last, matchColor = index, index, b.color
+    -- Evaluate one colour at a time: a wildcard cannot join unrelated colours.
+    local candidates = b.kind == 'Rainbow' and { 1, 2, 3, 4, 5, 6 } or { b.color }
+    for _, color in ipairs(candidates) do
+        local left, right = index, index
+        while
+            left > 1
+            and touching(run.balls[left - 1], run.balls[left])
+            and (run.balls[left - 1].kind == 'Rainbow' or run.balls[left - 1].color == color)
+        do
+            left = left - 1
+        end
+        while
+            run.balls[right + 1]
+            and touching(run.balls[right], run.balls[right + 1])
+            and (run.balls[right + 1].kind == 'Rainbow' or run.balls[right + 1].color == color)
+        do
+            right = right + 1
+        end
+        if right - left > last - first then
+            first, last, matchColor = left, right, color
+        end
     end
     if last - first + 1 < 3 then
         return 0
@@ -494,7 +502,7 @@ function E.Match(run, index, combo)
             specials[#specials + 1] = {
                 d = run.balls[i].d,
                 kind = run.balls[i].kind,
-                color = run.balls[i].color,
+                color = run.balls[i].kind == 'Rainbow' and matchColor or run.balls[i].color,
                 targets = run.balls[i].kind == 'Bomb' and bombTargets(run, i) or nil,
             }
         end
@@ -614,7 +622,7 @@ local function advanceChain(run, dt)
         if g < #groups then
             local rear = balls[group.last + 1]
             local front = balls[group.last]
-            local same = front.color == rear.color
+            local same = front.color == rear.color or front.kind == 'Rainbow' or rear.kind == 'Rainbow'
             delta = same and -90 * dt or 0
             local minimum = rear.d + spacing - front.d
             if delta <= minimum + 0.000001 then

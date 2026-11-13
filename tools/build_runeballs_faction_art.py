@@ -45,6 +45,7 @@ colors=[(240,35,48),(30,115,250),(45,210,45),(255,200,25),(175,45,245),(224,231,
 entries=[('Ball'+str(i),base,0) for i,base in enumerate(colors,1)]
 entries += [(kind+str(i),base,k) for k,kind in enumerate(['Bomb','Frost','Rewind'],7) for i,base in enumerate(colors,1)]
 entries += [(kind,base,k) for k,kind,base in [(7,'Bomb',(255,145,20)),(8,'Frost',(25,190,240)),(9,'Rewind',(165,65,235))]]
+entries.append(('Rainbow',colors[0],0))
 for name,base,index in entries:
     ball=Image.new('RGBA',(256,256))
     pixels=ball.load()
@@ -59,7 +60,11 @@ for name,base,index in entries:
             else:
                 z=math.sqrt(max(0,1-radius*radius))
                 light=max(0,min(1,.5+.45*z-.24*dx-.30*dy))
-                color=tuple(int(c*(.40+.60*light)) for c in base)
+                shade_base=base
+                if name=='Rainbow':
+                    sector=((math.atan2(dy,dx)+math.pi)/(2*math.pi)*6)%6
+                    shade_base=colors[int(sector)]
+                color=tuple(int(c*(.40+.60*light)) for c in shade_base)
                 highlight=math.exp(-(((dx+.30)/.31)**2+((dy+.38)/.19)**2)*2)*.88
                 color=tuple(round(c+(255-c)*highlight) for c in color)
             pixels[x,y]=color+(255,)

@@ -13,12 +13,30 @@ local holeSparks = {}
 local specialBursts = {}
 local chainAuras = {}
 V.chainAuras = chainAuras
-local specialColors = { Bomb = { 1, 0.48, 0.08 }, Frost = { 0.3, 0.85, 1 }, Rewind = { 0.75, 0.35, 1 } }
+local specialColors =
+    { Bomb = { 1, 0.48, 0.08 }, Frost = { 0.3, 0.85, 1 }, Rewind = { 0.75, 0.35, 1 }, Rainbow = { 1, 1, 1 } }
 V.specialBursts = specialBursts
 V.holes = {}
 local function move(t, x, y)
     t:ClearAllPoints()
     t:SetPoint('CENTER', board, 'TOPLEFT', x, -y * 0.86)
+end
+local function lightColor(color, kind, animated)
+    if kind == 'Rainbow' then
+        if not animated then
+            return A.colors[6]
+        end
+        local phase = (timer * 1.5) % 6
+        local first = math.floor(phase) + 1
+        local nextColor = first % 6 + 1
+        local fraction = phase - math.floor(phase)
+        local tint = {}
+        for i = 1, 3 do
+            tint[i] = A.colors[first][i] * (1 - fraction) + A.colors[nextColor][i] * fraction
+        end
+        return tint
+    end
+    return A.colors[color] or A.colors[6]
 end
 function V.Build(owner, field)
     frame, board = owner, field
@@ -193,7 +211,7 @@ function V.Draw(r, active)
                 local x, y = A.BallPosition(lane, ball)
                 local phase = timer * (ball.kind == 'Bomb' and 5 or 3) + auraCount * 1.7
                 local pulse = animateAuras and (0.5 + math.sin(phase) * 0.5) or 0.5
-                local color = A.colors[ball.color]
+                local color = lightColor(ball.color, ball.kind, animateAuras)
                 move(aura.glow, x, y)
                 move(aura.ring, x, y)
                 aura.glow:SetVertexColor(unpack(color))
@@ -343,7 +361,7 @@ function V.Draw(r, active)
     ammoLight:SetShown(r.loadedKind ~= nil and r.status == 'playing')
     if r.loadedKind then
         move(ammoLight, 380 - aimX * kick, 250 - aimY * kick)
-        ammoLight:SetVertexColor(unpack(A.colors[r.loaded]))
+        ammoLight:SetVertexColor(unpack(lightColor(r.loaded, r.loadedKind, moving)))
         local pulse = moving and (0.5 + math.sin(timer * 3) * 0.5) or 0.5
         ammoLight:SetSize(66 + pulse * 4, 66 + pulse * 4)
         ammoLight:SetAlpha(0.38 + pulse * 0.17)
@@ -354,7 +372,9 @@ function V.Draw(r, active)
         move(specialGlow, shot and shot.kind and shot.x or 380, shot and shot.kind and shot.y or 250)
         specialGlow:SetTexture(A.media .. 'SpecialRing.tga')
         specialGlow:SetBlendMode('BLEND')
-        specialGlow:SetVertexColor(unpack(A.colors[shot and shot.kind and shot.color or r.loaded]))
+        specialGlow:SetVertexColor(
+            unpack(lightColor(shot and shot.kind and shot.color or r.loaded, ability, moving))
+        )
         local size = shot and shot.kind and 37 or 44
         local pulse = moving and math.sin(timer * 5) * 2 or 0
         specialGlow:SetSize(size + pulse, size + pulse)
@@ -370,7 +390,7 @@ function V.Draw(r, active)
             t:SetShown(x >= 0 and x <= 760 and y >= 0 and y <= 500)
             t:SetAlpha((1 - i / 7) * 0.7)
             t:SetSize(24 - i * 2, 24 - i * 2)
-            t:SetVertexColor(unpack(A.colors[shot.color]))
+            t:SetVertexColor(unpack(lightColor(shot.color, shot.kind, moving)))
         end
     end
     for i, t in ipairs(pops) do
