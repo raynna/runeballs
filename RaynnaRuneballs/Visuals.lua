@@ -8,7 +8,7 @@ local recoil, shake = 0, 0
 local aimX, aimY = 0, -1
 local pressure
 local trail, pops, embers, orbit = {}, {}, {}, {}
-local glow, arrow, muzzle, specialGlow
+local glow, arrow, muzzle, specialGlow, ammoLight
 local holeSparks = {}
 local specialBursts = {}
 local chainAuras = {}
@@ -31,6 +31,10 @@ function V.Build(owner, field)
     specialGlow = A.Art(board.effectLayer, 'Halo', 0, 0, 52, 52, 'OVERLAY')
     specialGlow:SetBlendMode('ADD')
     specialGlow:Hide()
+    ammoLight = A.Art(board.effectLayer, 'SpecialLight', 380, 250 * 0.86, 78, 78, 'OVERLAY')
+    ammoLight:SetBlendMode('ADD')
+    ammoLight:Hide()
+    V.ammoLight = ammoLight
     for i = 1, 6 do
         trail[i] = A.Art(board.effectLayer, 'Halo', 0, 0, 24, 24, 'OVERLAY')
         trail[i]:SetBlendMode('ADD')
@@ -117,6 +121,7 @@ function V.Reset()
     end
     muzzle:Hide()
     specialGlow:Hide()
+    ammoLight:Hide()
     arrow:Hide()
 end
 function V.Pressure(target)
@@ -335,6 +340,14 @@ function V.Draw(r, active)
         muzzle:SetSize(20 + recoil * 90, 20 + recoil * 90)
     end
     local shot = r.shot
+    ammoLight:SetShown(r.loadedKind ~= nil and r.status == 'playing')
+    if r.loadedKind then
+        move(ammoLight, 380 - aimX * kick, 250 - aimY * kick)
+        ammoLight:SetVertexColor(unpack(A.colors[r.loaded]))
+        local pulse = moving and (0.5 + math.sin(timer * 3) * 0.5) or 0.5
+        ammoLight:SetSize(78 + pulse * 8, 78 + pulse * 8)
+        ammoLight:SetAlpha(0.7 + pulse * 0.3)
+    end
     local ability = shot and shot.kind or r.loadedKind
     specialGlow:SetShown(ability ~= nil)
     if ability then

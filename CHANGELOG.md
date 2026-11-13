@@ -1,3 +1,10 @@
+# 0.5.21
+
+- Loaded special ammunition in the central launcher now uses the same coloured light-spill texture and pulse as special chain balls, sized for the larger loaded marble.
+- The light follows launcher recoil, matches the ball colour, stays steady with reduced motion and disappears for ordinary ammo or when closing the game.
+
+Lua 5.1 tests and StyLua passed; unchanged faction layout previews reviewed. Use /reload. Actual glow appearance needs in-game confirmation; saves are preserved.
+
 # 0.5.20
 
 - Replaced the faint special-chain glow with a dedicated annular light-spill texture. Its brighter falloff sits outside the ball, illuminating the surrounding road rather than fading out inside the marble.

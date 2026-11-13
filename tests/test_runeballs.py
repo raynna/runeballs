@@ -744,3 +744,12 @@ for color=1,6 do
 end
 """)
 print('PASS: matching-colour auras and impacts, eased insertion with immediate physics')
+
+lua.execute("""
+local r=A.Engine.NewRun(A.db,1);r.paused=false;r.loaded=5;r.loadedKind='Frost'
+A.Draw();local light=A.Visuals.ammoLight
+assert(light:IsShown() and light.texture==A.media..'SpecialLight.tga')
+for i=1,3 do assert(light.tint[i]==A.colors[5][i]) end
+r.loadedKind=nil;A.Draw();assert(not light:IsShown(),'ordinary loaded ball has no special light')
+r.loadedKind='Bomb';A.Draw();A.Close();assert(not light:IsShown())
+""")
