@@ -1,3 +1,12 @@
+# 0.5.3
+
+- Rebuilt all six ordinary marble sprites with consistent circular outlines, smooth alpha edges, simpler shading and one soft highlight.
+- Supersampled artwork is reduced to 32px runtime textures for cleaner sampling near the normal 27px display size.
+- Colours, ball sizes and gameplay remain unchanged.
+
+Lua 5.1 gameplay tests and StyLua passed. Both faction offline previews reviewed; actual client rendering remains to be checked in WoW.
+Installed in WoW Forever. Use /reload; if the client retains cached textures, restart it. Saves are untouched.
+
 # 0.5.2
 
 - Fixed missed three-ball matches when separated sections reconnect, including very small gaps.

@@ -37,36 +37,30 @@ for i,name in enumerate(names):
     canvas=Image.new('RGBA',size)
     canvas.alpha_composite(tile,((size[0]-tile.width)//2,(size[1]-tile.height)//2))
     canvas.save(out/(name+'.tga'))
-# Ordinary marbles deliberately carry no ability glyphs.
-plain=Image.open(src/'PlainBallsPolished.png').convert('RGBA')
-xs=cuts(plain,0,5)
-for i in range(5):
-    tile=plain.crop((xs[i],0,xs[i+1],plain.height))
-    bounds=tile.getchannel('A').point(lambda a:255 if a>24 else 0).getbbox()
-    tile=tile.crop(bounds)
-    tile.thumbnail((120,120),Image.Resampling.LANCZOS)
-    canvas=Image.new('RGBA',(128,128))
-    canvas.alpha_composite(tile,((128-tile.width)//2,(128-tile.height)//2))
-    canvas.save(out/('Ball'+str(i+1)+'.tga'))
-# Sixth ordinary marble: a neutral pearl, distinct from the five saturated hues.
-# Procedural sphere keeps the same padded silhouette and bold outline.
+# Code-native marbles: simple continuous shading and one broad highlight.
+# Supersampling then reducing to 32px avoids undersampling tiny atlas details
+# at the normal 27px in-game size. Alpha edges remain smoothly antialiased.
 import math
-pearl=Image.new('RGBA',(128,128))
-for y in range(128):
-    for x in range(128):
-        dx,dy=(x-63.5)/57,(y-63.5)/57
-        radius=dx*dx+dy*dy
-        if radius<=1:
-            if radius>.88:
-                color=(15,18,25,255)
+colors=[(240,35,48),(30,115,250),(45,210,45),(255,200,25),(175,45,245),(224,231,244)]
+for index,base in enumerate(colors,1):
+    ball=Image.new('RGBA',(256,256))
+    pixels=ball.load()
+    for y in range(256):
+        for x in range(256):
+            dx,dy=(x-127.5)/116,(y-127.5)/116
+            radius=math.hypot(dx,dy)
+            if radius>1:
+                continue
+            if radius>.91:
+                color=(18,20,29)
             else:
-                z=math.sqrt(1-radius)
-                light=max(0,-dx*.4-dy*.55+z*.7)
-                spec=max(0,1-math.hypot(dx+.32,dy+.42)/.3)**2
-                value=min(255,int(95+155*light+100*spec))
-                color=(value,value,min(255,value+8),255)
-            pearl.putpixel((x,y),color)
-pearl.save(out/'Ball6.tga')
+                z=math.sqrt(max(0,1-radius*radius))
+                light=max(0,min(1,.5+.45*z-.24*dx-.30*dy))
+                color=tuple(int(c*(.40+.60*light)) for c in base)
+                highlight=math.exp(-(((dx+.30)/.31)**2+((dy+.38)/.19)**2)*2)*.88
+                color=tuple(round(c+(255-c)*highlight) for c in color)
+            pixels[x,y]=color+(255,)
+    ball.resize((32,32),Image.Resampling.LANCZOS).save(out/('Ball'+str(index)+'.tga'))
 # A code-native repeatable road segment: dark groove, bevel and fine gold rails.
 track=Image.new('RGBA',(128,32));d=ImageDraw.Draw(track)
 for y,color in enumerate([(12,11,13,230)]*2+[(126,94,43,255)]*2+[(51,43,37,255)]*2+[(18,20,25,245)]*20+[(51,43,37,255)]*2+[(126,94,43,255)]*2+[(12,11,13,230)]*2):
