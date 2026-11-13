@@ -1,3 +1,11 @@
+# 0.5.14
+
+- Reduced total special-ammo probability from 7% to 3% per fired shot. A successful roll then chooses Bomb, Frost or Rewind equally: 1% per type overall.
+- Rolls remain independent; three per hundred is an average, not a fixed quota.
+- Includes the polished special-ball sprites and clearer effects from 0.5.13.
+
+Lua 5.1 tests verify all 100 possible probability rolls: exactly three award any special. Full gameplay regression tests and StyLua passed. Use /reload; current ammo and saved progress are preserved.
+
 # 0.5.13
 
 - Rebuilt Bomb, Frost and Rewind ammunition with the same smooth small-scale rendering as regular marbles: orange bomb, cyan snowflake and violet rewind arrows.

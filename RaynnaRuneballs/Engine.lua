@@ -621,7 +621,7 @@ function E.Fire(run, x, y)
     run.loadedKind = run.nextKind
     run.shotsFired = run.shotsFired + 1
     run.nextKind = nil
-    if math.random(100) <= 7 then
+    if math.random(100) <= 3 then
         run.nextKind = ({ 'Bomb', 'Frost', 'Rewind' })[math.random(3)]
     end
     run.cooldown = 0.10

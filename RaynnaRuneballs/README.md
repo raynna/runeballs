@@ -1,6 +1,6 @@
 # Raynna's Runeballs
 
-A standalone coloured-marble shooter for WoW Forever (Interface 16001), version 0.5.13.
+A standalone coloured-marble shooter for WoW Forever (Interface 16001), version 0.5.14.
 Aim an arcane launcher into a winding chain and match three or more marbles
 before its leading ball reaches the void portal. Joining matching groups creates
 chain reactions and score multipliers. Every round has a distinct route: a grove
@@ -27,7 +27,7 @@ section stops, while the rear section advances and eventually pushes it. Matchin
 colours across a gap pull the front section backwards; a chain combo scores only
 when the sections actually touch. Combo multipliers reward successive joins.
 
-Each fired shot has an independent 7% chance to award special next-ammo.
+Each fired shot has an independent 3% chance to award special next-ammo.
 The type is chosen randomly with equal chances:
 
 - **Bomb:** explodes nearby marbles within 70 path pixels of the impact.

@@ -84,7 +84,7 @@ E.Special(r,#r.balls,'Rewind');assert(r.reverse==2.5)
 tail=r.balls[#r.balls].d
 E.Step(db,0.05);assert(r.balls[#r.balls].d<tail,'rewind moves backwards, including behind entrance')
 local random=math.random
-for _,case in ipairs({{roll=7,kind=1,expected='Bomb'},{roll=8},{roll=1,kind=3,expected='Rewind'},{roll=100},{roll=4,kind=2,expected='Frost'}}) do
+for _,case in ipairs({{roll=3,kind=1,expected='Bomb'},{roll=4},{roll=1,kind=3,expected='Rewind'},{roll=100},{roll=2,kind=2,expected='Frost'}}) do
  math.random=function(n)
   if n==100 then return case.roll end
   if n==3 then return case.kind or 1 end
@@ -642,3 +642,15 @@ for _,fx in ipairs(A.Visuals.specialBursts) do
 end
 """)
 print('PASS: distinct special impacts, dual-lane drawing, lifetime, reduced motion and close cleanup')
+
+lua.execute("""
+local E=A.Engine;local db={};E.Init(db);local r=E.NewRun(db,1);r.paused=false
+local random=math.random;local count=0
+for roll=1,100 do
+ math.random=function(n) return n==100 and roll or 1 end
+ r.shot=nil;r.cooldown=0;E.Fire(r,100,100)
+ if r.nextKind then count=count+1 end
+end
+math.random=random
+assert(count==3,'exactly 3 of 100 equally likely rolls award any special')
+""")
