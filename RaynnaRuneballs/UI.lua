@@ -526,7 +526,7 @@ function A.BuildUI()
         aimDots[i]:Hide()
     end
     board.loaded = A.Art(board, 'Ball1', 380, 250 * YS, 34, 34, 'OVERLAY')
-    board.next = A.Art(board, 'Ball1', 380, 316 * YS, 28, 28, 'OVERLAY')
+    board.next = A.Art(board, 'Ball1', 448, 250 * YS, 28, 28, 'OVERLAY')
     local nextLabel = A.Label(board, 'NEXT', 0, 0, 14)
     nextLabel:ClearAllPoints()
     nextLabel:SetPoint('TOP', board.next, 'BOTTOM', 0, -3)

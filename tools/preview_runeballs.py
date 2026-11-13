@@ -46,7 +46,7 @@ def preview(faction,scene):
   ex,ey=route[-1];px,py=route[-2];angle=-math.degrees(math.atan2((ey-py)*.86,ex-px))
   sprite('Portal',132+ex,155+ey*.86,60,60,angle)
  sprite(faction+'Launcher',512,370,104,104);sprite('Ball2',512,370,34,34)
- sprite('Bomb',512,427,28,28);text('NEXT',512,446,14)
+ sprite('Bomb',580,370,28,28);text('NEXT',580,390,14)
  text('ROUND '+str(scene['level']),258,72,25,True,155);text(scene['name'],259,105,14,False,165)
  for x,label,value in [(744,'SCORE','9,200'),(873,'BEST','32,200')]:
   text(label,x,72,16);text(value,x,96,28,True,119)

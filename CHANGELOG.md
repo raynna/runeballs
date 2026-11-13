@@ -1,3 +1,9 @@
+# 0.4.3
+
+Moves the next-ball indicator beside the launcher so it no longer overlaps a dual-path road. Includes all 0.4.2 improvements: compact edge holes, aligned exits, better road spacing and underground direction arrows.
+
+Lua 5.1 mock checks and StyLua pass. Use /reload then /rrb for in-game testing.
+
 # 0.4.2
 
 - Restored visible starting holes at every board edge.
