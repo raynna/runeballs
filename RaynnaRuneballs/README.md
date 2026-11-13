@@ -1,14 +1,13 @@
 # Raynna's Runeballs
 
-A standalone coloured-marble shooter for WoW Forever (Interface 16001), version 0.5.1.
+A standalone coloured-marble shooter for WoW Forever (Interface 16001), version 0.5.2.
 Aim an arcane launcher into a winding chain and match three or more marbles
 before its leading ball reaches the void portal. Joining matching groups creates
 chain reactions and score multipliers. Every round has a distinct route: a grove
 spiral, serpentine bends, clover and switchbacks introduce the mechanics, followed
 by generated routes with increasing turns and lobes. The campaign has 100 rounds with a gentler progression. Round one starts with
 12 balls in the chain, 54 total marbles and a speed of 24 path pixels/second.
-Three colours introduce the game; a fourth arrives at round 10 and the fifth at
-round 25. Speed and total marble count rise gradually across the campaign.
+Six colours are available from round one: red, blue, green, yellow, purple and pearl. Speed and total marble count rise gradually across the campaign.
 
 Rounds 1-29 are single-path. Dual paths appear at rounds 30, 40 and 50, then every
 five rounds from 60 through 100. Each lane runs at 50% of the equivalent single
@@ -159,3 +158,7 @@ not a fitted text label.
 Version 0.5.1 raises the base speed from 18 to 24 path pixels/second. Each
 dual-path lane runs at exactly half the normal speed for its level. The existing
 100-level progression and late introduction of dual paths are retained.
+
+Version 0.5.2 fixes gap-contact matching and shot insertion locality, prevents
+successful matches from pushing surviving sections forward, caps rewind at a
+visible leading ball, and places combat effects and floating text above roads.

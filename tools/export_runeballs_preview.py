@@ -11,7 +11,7 @@ data=[]
 for level in range(1,101):
     path=engine.Path(level)
     length=path.length
-    data.append({'level':level,'name':engine.MapName(level),'colors':3 if level<10 else 4 if level<25 else 5,'path':[[path[i].x,path[i].y] for i in range(1,len(path)+1)],
+    data.append({'level':level,'name':engine.MapName(level),'colors':6,'path':[[path[i].x,path[i].y] for i in range(1,len(path)+1)],
         'marbles':[list(engine.Point(level,d)) for d in range(14,min(1150,int(length)),25)],'end':list(engine.Point(level,length))})
 for scene in data:
     level=scene['level']

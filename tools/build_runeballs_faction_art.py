@@ -48,6 +48,25 @@ for i in range(5):
     canvas=Image.new('RGBA',(128,128))
     canvas.alpha_composite(tile,((128-tile.width)//2,(128-tile.height)//2))
     canvas.save(out/('Ball'+str(i+1)+'.tga'))
+# Sixth ordinary marble: a neutral pearl, distinct from the five saturated hues.
+# Procedural sphere keeps the same padded silhouette and bold outline.
+import math
+pearl=Image.new('RGBA',(128,128))
+for y in range(128):
+    for x in range(128):
+        dx,dy=(x-63.5)/57,(y-63.5)/57
+        radius=dx*dx+dy*dy
+        if radius<=1:
+            if radius>.88:
+                color=(15,18,25,255)
+            else:
+                z=math.sqrt(1-radius)
+                light=max(0,-dx*.4-dy*.55+z*.7)
+                spec=max(0,1-math.hypot(dx+.32,dy+.42)/.3)**2
+                value=min(255,int(95+155*light+100*spec))
+                color=(value,value,min(255,value+8),255)
+            pearl.putpixel((x,y),color)
+pearl.save(out/'Ball6.tga')
 # A code-native repeatable road segment: dark groove, bevel and fine gold rails.
 track=Image.new('RGBA',(128,32));d=ImageDraw.Draw(track)
 for y,color in enumerate([(12,11,13,230)]*2+[(126,94,43,255)]*2+[(51,43,37,255)]*2+[(18,20,25,245)]*20+[(51,43,37,255)]*2+[(126,94,43,255)]*2+[(12,11,13,230)]*2):

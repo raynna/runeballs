@@ -23,19 +23,19 @@ function V.Build(owner, field)
     arrow = A.Art(board, 'AimArrow', 380, 200 * 0.86, 22, 26, 'OVERLAY')
     muzzle = A.Art(board, 'Spark', 380, 250 * 0.86, 35, 35, 'OVERLAY')
     muzzle:Hide()
-    specialGlow = A.Art(board, 'Halo', 0, 0, 52, 52, 'OVERLAY')
+    specialGlow = A.Art(board.effectLayer, 'Halo', 0, 0, 52, 52, 'OVERLAY')
     specialGlow:SetBlendMode('ADD')
     specialGlow:Hide()
     for i = 1, 6 do
-        trail[i] = A.Art(board, 'Halo', 0, 0, 24, 24, 'OVERLAY')
+        trail[i] = A.Art(board.effectLayer, 'Halo', 0, 0, 24, 24, 'OVERLAY')
         trail[i]:SetBlendMode('ADD')
         trail[i]:Hide()
-        embers[i] = A.Art(board, 'Dot', 0, 0, 4, 4, 'OVERLAY')
+        embers[i] = A.Art(board.effectLayer, 'Dot', 0, 0, 4, 4, 'OVERLAY')
         embers[i]:SetVertexColor(1, 0.5, 0.15)
         embers[i]:Hide()
     end
     for i = 1, 3 do
-        orbit[i] = A.Art(board, 'Dot', 0, 0, 4, 4, 'BORDER')
+        orbit[i] = A.Art(board.effectLayer, 'Dot', 0, 0, 4, 4, 'BORDER')
         orbit[i]:SetVertexColor(0.7, 0.4, 1)
         orbit[i]:Hide()
     end
@@ -61,7 +61,7 @@ function V.Build(owner, field)
         holeSparks[i]:Hide()
     end
     for i = 1, 32 do
-        pops[i] = A.Art(board, 'Ball1', 0, 0, 27, 27, 'ARTWORK')
+        pops[i] = A.Art(board.effectLayer, 'Ball1', 0, 0, 27, 27, 'ARTWORK')
         pops[i]:Hide()
     end
 end

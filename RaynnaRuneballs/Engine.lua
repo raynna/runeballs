@@ -9,7 +9,14 @@ function E.MarbleCount(level)
     return 54 + math.floor((math.min(level, 100) - 1) * 1.4)
 end
 A.media = 'Interface\\AddOns\\RaynnaRuneballs\\Media\\'
-A.colors = { { 1, 0.19, 0.15 }, { 0.15, 0.65, 1 }, { 0.28, 0.9, 0.22 }, { 1, 0.8, 0.12 }, { 0.8, 0.28, 1 } }
+A.colors = {
+    { 1, 0.19, 0.15 },
+    { 0.15, 0.65, 1 },
+    { 0.28, 0.9, 0.22 },
+    { 1, 0.8, 0.12 },
+    { 0.8, 0.28, 1 },
+    { 0.95, 0.95, 1 },
+}
 A.runes = { 'I', 'II', 'III', 'IV', 'V' }
 A.realms = { 'The Emerald Grove', 'The Sunken Archive', 'The Violet Sanctum' }
 local spacing = 25
@@ -284,6 +291,7 @@ function E.Init(db)
         if r.other then
             E.Init({ run = r.other })
         end
+        r.colorCount = 6
         r.effects = r.effects or {}
         r.shotsFired = r.shotsFired or 0
         r.paused = true
@@ -333,7 +341,7 @@ local function newLane(db, level, score)
         score = score or 0,
         balls = {},
         remaining = E.MarbleCount(level),
-        colorCount = level < 10 and 3 or level < 25 and 4 or 5,
+        colorCount = 6,
         head = spacing * (initial - 1),
         effects = {},
         shotsFired = 0,
@@ -369,7 +377,7 @@ end
 -- Every marble owns its path distance. Removing a group leaves its neighbours
 -- untouched; contact physics, rather than index renumbering, closes the gap.
 local function touching(a, b)
-    return a and b and a.d - b.d <= spacing + 0.1
+    return a and b and a.d - b.d <= spacing + 0.000001
 end
 local function removeGroup(run, first, last, combo, kind)
     combo = combo or 1
@@ -422,18 +430,33 @@ function E.Match(run, index, combo)
     end
     return combo or 1
 end
-function E.Insert(run, index, color)
+function E.Insert(run, index, color, target)
     local rear = run.balls[index]
     local front = run.balls[index - 1]
     local d = rear and rear.d + spacing or (front and front.d - spacing or 0)
-    -- Inserting at the entrance must never hide a marble at a negative distance.
-    d = math.max(0, d)
+    if target and front and rear and front.d - rear.d >= spacing * 2 then
+        d = math.max(rear.d + spacing, math.min(front.d - spacing, target))
+    end
+    local shifted = {}
     table.insert(run.balls, index, { color = color, d = d })
     for i = index - 1, 1, -1 do
-        run.balls[i].d = math.max(run.balls[i].d, run.balls[i + 1].d + spacing)
+        local ball = run.balls[i]
+        local needed = run.balls[i + 1].d + spacing
+        if ball.d >= needed then
+            break
+        end
+        shifted[#shifted + 1] = { ball = ball, d = ball.d }
+        ball.d = needed
     end
-    run.head = run.balls[1].d
-    return E.Match(run, index)
+    local matched = E.Match(run, index)
+    -- A consumed shot must not ratchet the surviving front section forward.
+    if matched > 0 then
+        for _, old in ipairs(shifted) do
+            old.ball.d = old.d
+        end
+    end
+    run.head = run.balls[1] and run.balls[1].d or 0
+    return matched
 end
 function E.Special(run, index, kind)
     if A.GameSound then
@@ -468,7 +491,10 @@ local function advanceChain(run, dt)
     end
     local speed = E.Speed(run) * (run.slow > 0 and 0.28 or 1)
     if run.reverse > 0 then
-        local delta = 135 * dt
+        local delta = math.min(135 * dt, math.max(0, balls[1].d - 38))
+        if balls[1].d - delta <= 38 then
+            run.reverse = 0
+        end
         for _, b in ipairs(balls) do
             b.d = b.d - delta
         end
@@ -494,11 +520,9 @@ local function advanceChain(run, dt)
             local same = front.color == rear.color
             delta = same and -210 * dt or 0
             local minimum = rear.d + spacing - front.d
-            if delta <= minimum then
+            if delta <= minimum + 0.000001 then
                 delta = minimum
-                if rear.joinCombo then
-                    contacts[#contacts + 1] = { ball = rear, combo = rear.joinCombo }
-                end
+                contacts[#contacts + 1] = { ball = rear, combo = rear.joinCombo or 1 }
                 rear.joinCombo = nil
             end
         end
@@ -723,7 +747,7 @@ local function shoot(r, dt)
                 if A.GameSound then
                     A.GameSound('Hit')
                 end
-                E.Insert(hitLane, index, shot.color)
+                E.Insert(hitLane, index, shot.color, d + (index == hit and spacing or -spacing))
             end
             r.shot = nil
         else

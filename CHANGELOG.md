@@ -1,3 +1,14 @@
+# 0.5.2
+
+- Fixed missed three-ball matches when separated sections reconnect, including very small gaps.
+- Shots inserted into gaps stay beside the ball they hit; successful matches no longer push surviving sections forward.
+- Rewind stops with the leading marble fully visible, then forward movement resumes.
+- Combo text, projectile and pop effects render above the roads.
+- Six plain marble colours from round one: red, blue, green, yellow, purple and pearl. Existing runs retain progress and gain the expanded palette.
+
+Validated with Lua 5.1 gameplay/regression tests, shared flight chooser tests, StyLua and both faction layout previews. These are automated/offline checks, not in-client playtesting.
+Installed updates take effect with /reload. Character saves are preserved.
+
 # 0.5.1
 
 - Starting speed increased from 18 to 24 path pixels/second (33% faster).

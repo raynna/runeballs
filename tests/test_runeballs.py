@@ -12,6 +12,7 @@ def runtime():
         local create=CreateFrame
         function CreateFrame(...)
             local f=create(...)
+            f.CreateFontString=function(self) return create('FontString',nil,self) end
             f.SetBackdrop=function(self,data) self.backdrop=data end
             f.CreateTexture=function(self,name,layer)
                 local t=create('Texture',name,self);t.drawLayer=layer;t.SetAlpha=function(self,v) self.alpha=v end;return t
@@ -47,9 +48,9 @@ E.Init(db); assert(db.run==r and r.paused and r.shot,'reload retains in-flight s
 r=E.NewRun(db,1);r.remaining=0;r.paused=false
 r.balls={{color=2,d=400},{color=2,d=375},{color=1,d=350},{color=1,d=325},{color=2,d=300}}
 assert(E.Insert(r,4,1)==1 and #r.balls==3 and r.score==300)
-assert(r.balls[1].d==425 and r.balls[3].d==300,'removal does not teleport survivors')
+assert(r.balls[1].d==400 and r.balls[3].d==300,'removal does not teleport survivors')
 E.Step(db,0.05)
-assert(r.balls[1].d<425 and r.balls[3].d>300 and #r.balls==3,'matching front retracts while rear advances')
+assert(r.balls[1].d<400 and r.balls[3].d>300 and #r.balls==3,'matching front retracts while rear advances')
 for i=1,30 do E.Step(db,0.05) end
 assert(r.status=='won' and r.score==900 and db.level==2 and db.best==900,'contact triggers delayed x2 combo')
 
@@ -424,3 +425,59 @@ assert(A.frame.result.action.label:GetText()=='PLAY AGAIN')
 A.frame.result.action.OnClick()
 assert(A.db.run.level==1 and A.db.run.score==0,'campaign replay never creates level 101')
 """)
+
+# Regression coverage for gap insertion, contact matching and rewind limits.
+lua.execute("""
+local E=A.Engine
+local db={};E.Init(db)
+local function run(balls)
+ local r=E.NewRun(db,1);r.paused=false;r.remaining=0;r.balls=balls;return r
+end
+local r=run({{color=1,d=400},{color=1,d=350}})
+assert(E.Insert(r,2,1,375)==1 and #r.balls==0,'shot fills a one-ball gap and matches both ends')
+r=run({{color=1,d=400},{color=1,d=325}})
+E.Insert(r,2,1,375)
+for i=1,20 do E.Step(db,.02) end
+assert(#r.balls==0 and r.score==300,'unmarked gap contact still matches three')
+r=run({{color=2,d=600},{color=1,d=300}})
+E.Insert(r,2,3,575)
+assert(r.balls[2].d==575 and r.balls[1].d==600,'gap insertion stays at impact boundary')
+r=run({{color=2,d=400},{color=1,d=375},{color=1,d=350},{color=3,d=325}})
+E.Insert(r,3,1)
+assert(r.balls[1].d==400 and r.balls[2].d==325,'successful shot cannot push survivors forward')
+r=run({{color=1,d=50},{color=2,d=25},{color=3,d=0}});r.reverse=2.5
+for i=1,2 do E.Step(db,.05) end
+assert(r.balls[1].d==38 and r.reverse==0 and not E.Hidden(r,38),'rewind stops with visible leading marble')
+E.Step(db,.05);assert(r.balls[1].d>38,'chain resumes forward after rewind limit')
+for trial=1,200 do
+ r=run({{color=1,d=400},{color=2,d=375},{color=3,d=350},{color=4,d=325}})
+ local index=math.random(1,5);E.Insert(r,index,5)
+ for i=1,#r.balls-1 do assert(r.balls[i].d-r.balls[i+1].d>=24.999) end
+ assert(r.head<=425,'one insertion advances front by at most one marble')
+end
+""")
+print('PASS: gap shot matching, local insertion, no match shove, capped rewind')
+
+lua.execute("""
+local E=A.Engine;local db={};E.Init(db)
+local r=E.NewRun(db,1);r.remaining=0;r.paused=false
+r.balls={{color=1,d=400},{color=1,d=350.05}}
+E.Insert(r,2,1,375)
+for i=1,3 do E.Step(db,.001) end
+assert(#r.balls==0,'subpixel gap cannot become touching without checking match')
+A.Open()
+assert(A.board.combo.parent==A.board.effectLayer and A.board.shot.parent==A.board.effectLayer,'text and projectiles render above road frames')
+""")
+
+lua.execute("""
+local E=A.Engine;local db={};E.Init(db)
+for level=1,100 do
+ local r=E.NewRun(db,level);assert(r.colorCount==6)
+ if r.other then assert(r.other.colorCount==6) end
+end
+local r=E.NewRun(db,1);r.colorCount=3;local score=r.score;E.Init(db)
+assert(r.colorCount==6 and r.score==score,'saved runs gain sixth colour without resetting')
+r.remaining=0;r.balls={{color=6,d=100}};r.paused=false;r.cooldown=0
+E.Fire(r,100,100);assert(r.next==6,'ammo picker includes pearl and excludes exhausted colours')
+""")
+assert((ADDON/'Media/Ball6.tga').exists())

@@ -349,7 +349,7 @@ function A.Draw()
     A.Visuals.Draw(r, active)
     for i, e in ipairs(active) do
         if not effects[i] then
-            effects[i] = A.Art(board, 'Spark', 0, 0, 1, 1, 'OVERLAY')
+            effects[i] = A.Art(board.effectLayer, 'Spark', 0, 0, 1, 1, 'OVERLAY')
         end
         local t = effects[i]
         t:SetTexture(A.media .. (e.kind or 'Spark') .. '.tga')
@@ -365,7 +365,7 @@ function A.Draw()
         for j = 1, 3 do
             local k = (i - 1) * 3 + j
             if not fragments[k] then
-                fragments[k] = A.Art(board, 'Ball1', 0, 0, 9, 9, 'OVERLAY')
+                fragments[k] = A.Art(board.effectLayer, 'Ball1', 0, 0, 9, 9, 'OVERLAY')
             end
             local shard = fragments[k]
             local angle = j * 2.094 + i
@@ -536,6 +536,10 @@ function A.BuildUI()
     entryCovers:SetAllPoints(board)
     entryCovers:SetFrameLevel(board:GetFrameLevel() + 3)
     entryCovers:EnableMouse(false)
+    board.effectLayer = CreateFrame('Frame', nil, board)
+    board.effectLayer:SetAllPoints(board)
+    board.effectLayer:SetFrameLevel(board:GetFrameLevel() + 5)
+    board.effectLayer:EnableMouse(false)
     board.exit = A.Art(upperRoad, 'Portal', 0, 0, 60, 60, 'BORDER')
     board.otherExit = A.Art(upperRoad, 'Portal', 0, 0, 60, 60, 'BORDER')
     board.launcher = A.Art(board, A.Faction() .. 'Launcher', 380, 250 * YS, 104, 104, 'BORDER')
@@ -548,8 +552,8 @@ function A.BuildUI()
     local nextLabel = A.Label(board, 'NEXT', 0, 0, 14)
     nextLabel:ClearAllPoints()
     nextLabel:SetPoint('TOP', board.next, 'BOTTOM', 0, -3)
-    board.shot = A.Art(board, 'Ball1', 0, 0, 27, 27, 'OVERLAY')
-    board.combo = A.Label(board, '', 0, 0, 25)
+    board.shot = A.Art(board.effectLayer, 'Ball1', 0, 0, 27, 27, 'OVERLAY')
+    board.combo = A.Label(board.effectLayer, '', 0, 0, 25)
     board.combo:SetHeight(66)
     board.combo:SetWidth(360)
     board.combo:SetJustifyH('CENTER')
