@@ -1,3 +1,11 @@
+# 0.5.20
+
+- Replaced the faint special-chain glow with a dedicated annular light-spill texture. Its brighter falloff sits outside the ball, illuminating the surrounding road rather than fading out inside the marble.
+- Increased pulse footprint to 64–72px and light opacity to 70–100%. The centre stays transparent so the matching colour and ability symbol remain readable.
+- Light still uses the ball colour, stays hidden in tunnels and respects reduced motion.
+
+Lua 5.1 regression tests and StyLua passed. Unchanged faction layouts reviewed. Actual glow strength needs in-client confirmation. Use /reload; restart WoW if the new texture does not load. Saves are preserved.
+
 # 0.5.19
 
 - Special-ball auras, loaded/in-flight rings, trails and special impact particles now use the marble's matching colour instead of an ability colour. Symbols still identify Bomb, Frost and Rewind.

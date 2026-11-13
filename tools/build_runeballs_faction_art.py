@@ -130,6 +130,17 @@ for y in range(128):
         radius=math.hypot(x-63.5,y-63.5)/63
         pixels[x,y]=(255,255,255,int(150*max(0,1-radius)**2))
 halo.save(out/'Halo.tga')
+# Annular light spill leaves the marble face clear and lights the surrounding road.
+spill=Image.new('RGBA',(128,128));pixels=spill.load()
+for y in range(128):
+    for x in range(128):
+        radius=math.hypot(x-63.5,y-63.5)/63
+        inner=max(0,min(1,(radius-.25)/.10))
+        outer=max(0,min(1,(1-radius)/.18))
+        alpha=int(235*math.exp(-((radius-.43)/.27)**2)*inner*outer)
+        pixels[x,y]=(255,255,255,alpha)
+spill.resize((64,64),Image.Resampling.LANCZOS).save(out/'SpecialLight.tga')
+
 # A small reusable panel tile with clean cartoon outlines and gold bevel.
 panel=Image.new('RGBA',(64,64));d=ImageDraw.Draw(panel)
 d.rounded_rectangle((0,0,63,63),radius=8,fill=(22,13,18),width=2)

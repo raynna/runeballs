@@ -177,7 +177,7 @@ function V.Draw(r, active)
                 local aura = chainAuras[auraCount]
                 if not aura then
                     aura = { sparks = {} }
-                    aura.glow = A.Art(board.effectLayer, 'Halo', 0, 0, 40, 40, 'OVERLAY')
+                    aura.glow = A.Art(board.effectLayer, 'SpecialLight', 0, 0, 64, 64, 'OVERLAY')
                     aura.glow:SetBlendMode('ADD')
                     aura.ring = A.Art(board.effectLayer, 'SpecialRing', 0, 0, 31, 31, 'OVERLAY')
                     for i = 1, 2 do
@@ -193,8 +193,8 @@ function V.Draw(r, active)
                 move(aura.ring, x, y)
                 aura.glow:SetVertexColor(unpack(color))
                 aura.ring:SetVertexColor(unpack(color))
-                aura.glow:SetSize(38 + pulse * 6, 38 + pulse * 6)
-                aura.glow:SetAlpha(0.35 + pulse * 0.25)
+                aura.glow:SetSize(64 + pulse * 8, 64 + pulse * 8)
+                aura.glow:SetAlpha(0.7 + pulse * 0.3)
                 aura.ring:SetAlpha(0.35 + pulse * 0.35)
                 aura.glow:Show()
                 aura.ring:Show()
