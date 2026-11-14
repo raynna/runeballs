@@ -141,7 +141,10 @@ A.SetScale(9);assert(A.db.options.scale==1.3 and A.db.options.position)
 A.SetScale(0);assert(A.db.options.scale==0.55)
 SlashCmdList.RAYNNARUNEBALLS('settings');assert(SETTINGS_OPENED==123)
 A.Close();FLYING=true;A.CheckFlight();assert(A.frame:IsShown() and A.autoOpened)
-FLYING=false;A.CheckFlight();assert(not A.frame:IsShown() and A.db.run.paused)
+FLYING=false;A.CheckFlight();assert(A.frame:IsShown() and A.db.run.paused,'default leaves automatic game open and paused')
+A.Close();A.db.options.closeOnLanding=true
+FLYING=true;A.CheckFlight();FLYING=false;A.CheckFlight()
+assert(not A.frame:IsShown() and A.db.run.paused,'explicit close on landing closes automatic game')
 A.Open(false);FLYING=true;A.CheckFlight();FLYING=false;A.CheckFlight()
 assert(A.frame:IsShown(),'manually opened window survives landing')
 A.Close();A.db.options.autoFlight=false;FLYING=true;A.CheckFlight()
@@ -807,3 +810,24 @@ assert(not r.shot and not r.specialImpact and not r.balls[1].slideAge)
 local head=r.head;E.Init(db);assert(r.head==head,'route migration happens only once')
 """)
 print('PASS: longer single routes, separated corridors, portal clearance and v3 layout migration')
+
+# Landing toggle defaults, UI refresh, callbacks and saved choices agree.
+landing=runtime()
+landing.execute("""
+A.events.OnEvent(A.events,'ADDON_LOADED','RaynnaRuneballs')
+A.events.OnEvent(A.events,'PLAYER_LOGIN')
+local page=RaynnaModsSettingsRegistry.pages.runeballs
+local checks={}
+for _,f in ipairs(Frames) do if f.parent==page.frame and f.kind=='CheckButton' then checks[#checks+1]=f end end
+local toggle=checks[2]
+toggle.SetChecked=function(self,value) self.checked=value end
+page.refresh();assert(toggle.checked==false,'unset preference displays off')
+for _,value in ipairs({true,false}) do
+ toggle.GetChecked=function() return value end
+ toggle.OnClick(toggle);assert(A.db.options.closeOnLanding==value)
+ A.Engine.Init(A.db);page.refresh();assert(toggle.checked==value,'explicit choice survives initialization and refresh')
+ A.Close();FLYING=true;A.CheckFlight();A.frame.play.OnClick();FLYING=false;A.CheckFlight()
+ assert(A.db.run.paused and A.frame:IsShown()==not value,'landing follows selected preference')
+end
+""")
+print('PASS: close-after-flight defaults off, settings callbacks and saved preferences')

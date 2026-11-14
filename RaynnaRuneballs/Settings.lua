@@ -40,8 +40,8 @@ function A.BuildSettings()
         end, function(v)
             A.db.options.autoFlight = v
         end)
-        check('Close on landing when opened automatically', -125, function()
-            return A.db.options.closeOnLanding ~= false
+        check('Close game when flight is done (automatic opens)', -125, function()
+            return A.db.options.closeOnLanding == true
         end, function(v)
             A.db.options.closeOnLanding = v
         end)

@@ -106,7 +106,7 @@ events:SetScript('OnEvent', function(_, event, name)
             land = function()
                 if A.autoOpened then
                     A.Pause()
-                    if A.db.options.closeOnLanding ~= false then
+                    if A.db.options.closeOnLanding == true then
                         A.Close()
                     else
                         A.Draw()
@@ -170,7 +170,7 @@ end
 local function demo(value)
     local allowed, identity = developerIdentity()
     if not allowed then
-        print('Runeballs 0.5.24: demo restricted to Its Raynna. Detected: [' .. identity .. ']')
+        print('Runeballs 0.5.25: demo restricted to Its Raynna. Detected: [' .. identity .. ']')
         return
     end
     if value == 'off' then

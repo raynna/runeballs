@@ -1,3 +1,13 @@
+# 0.5.25
+
+Close game when flight is done now defaults to OFF.
+
+The existing toggle is in /rrb settings (Settings > AddOns > Raynna's mods > Runeballs). An automatically opened game stays visible and pauses on landing unless you enable the toggle. Explicit saved choices are preserved; manually opened games remain open.
+
+Lua 5.1 gameplay/settings/persistence and flight-game tests passed; StyLua passed. Unchanged faction previews reviewed. Installed files and public player ZIP verified. Use /reload; player saves are untouched.
+
+The six individual preview PNGs are unchanged staged renders from the previous map update, not live client screenshots.
+
 # 0.5.24
 
 Longer, more varied maps and six individual preview images.

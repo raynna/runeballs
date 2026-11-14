@@ -1,6 +1,6 @@
 # Raynna's Runeballs
 
-A standalone coloured-marble shooter for WoW Forever (Interface 16001), version 0.5.24.
+A standalone coloured-marble shooter for WoW Forever (Interface 16001), version 0.5.25.
 Aim an arcane launcher into a winding chain and match three or more marbles
 before its leading ball reaches the void portal. Joining matching groups creates
 chain reactions and score multipliers. The 100-round campaign alternates twelve
@@ -61,6 +61,9 @@ Runeballs settings. Missing client sound references safely fall back to a UI pin
 
 `/rrb settings` opens **Settings → AddOns → Raynna's mods → Runeballs**.
 Choose automatic flight opening, close on landing, minimap visibility and scale.
+“Close game when flight is done” defaults to off: an automatically opened game
+stays visible and pauses after landing. Enable it to close automatically instead.
+Manually opened games remain open; explicit saved choices are preserved.
 Minimap right-click opens settings; drag the minimap icon to reposition it.
 `/rrb center`, `/rrb show`, `/rrb hide`, `/rrb scale 90` are also available.
 Opening automatically on a flight waits for Play. Landing pauses only a window
