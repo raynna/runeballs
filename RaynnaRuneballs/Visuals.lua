@@ -107,7 +107,8 @@ function V.Build(owner, field)
         hole.exit = A.Art(portalLayer, 'Halo', 0, 0, 28, 28, 'OVERLAY')
         hole.exit:SetVertexColor(0.65, 0.18, 1)
         hole.exit:SetBlendMode('ADD')
-        hole.ward = A.Art(portalLayer, 'EffectWard', 0, 0, 46, 46, 'OVERLAY')
+        hole.ward = A.Art(portalLayer, 'PortalShield', 0, 0, 56, 56, 'OVERLAY')
+        hole.ward:SetBlendMode('ADD')
         hole.ward:Hide()
         hole.swirl = { A.Art(portalLayer, 'PortalSwirl', 0, 0, 28, 28, 'OVERLAY') }
         hole.swirl[1]:SetBlendMode('ADD')
@@ -164,6 +165,9 @@ function V.Build(owner, field)
     end
 end
 function V.Reset()
+    if A.Feedback then
+        A.Feedback.Reset()
+    end
     if not board then
         return
     end
@@ -516,8 +520,8 @@ function V.Draw(r, active)
         if warded then
             local x, y = A.Engine.Point(A.Engine.Route(lane), A.Engine.Path(A.Engine.Route(lane)).length)
             move(hole.ward, x, y)
-            hole.ward:SetVertexColor(unpack(A.colors[lane.wardColor or 6]))
-            hole.ward:SetAlpha(A.MotionReduced() and 0.65 or 0.55 + math.sin(timer * 2) * 0.12)
+            hole.ward:SetVertexColor(0.35, 0.85, 1)
+            hole.ward:SetAlpha(A.MotionReduced() and 0.85 or 0.8 + math.sin(timer * 2) * 0.1)
         end
         local sealed = r.ending and r.ending.won
         hole.entry:SetShown(lane ~= nil)

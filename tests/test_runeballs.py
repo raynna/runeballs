@@ -1020,3 +1020,39 @@ for _,kind in ipairs({'Bomb','Frost','Rewind','Rainbow','Paint','Stasis','Magnet
 end
 """)
 print('PASS: all ten dedicated VFX, luminous particles, rainbow colours and cleanup')
+
+
+lua = runtime()
+lua.execute("""
+A.events.OnEvent(A.events,'ADDON_LOADED','RaynnaRuneballs');A.events.OnEvent(A.events,'PLAYER_LOGIN');A.Open(false)
+local E=A.Engine; local r=A.db.run
+r.balls={{d=250,color=2},{d=225,color=2},{d=200,color=2}}
+assert(E.Match(r,2,3));A.Draw()
+local fx=A.Feedback.clears[1]
+assert(fx[1]:IsShown() and fx[1].blendMode=='ADD')
+assert(fx[1].tint[2]==A.colors[2][2] and r.effects[1].combo==3)
+A.db.options.reducedMotion=true;A.Draw();assert(not fx[3]:IsShown())
+r.balls={{d=250,color=2}};r.reverse=2;r.slow=3;r.stasis=2;r.magnet=4;r.treasure=4
+A.Draw();local cue=A.Feedback.statuses[1]
+for i=1,6 do assert(cue[i]:IsShown()) end
+r.ward=12;A.Draw();assert(A.Visuals.holes[1].ward.texture==A.media..'PortalShield.tga')
+r.reverse=0;r.slow=0;r.stasis=0;r.magnet=0;r.treasure=0;A.Draw()
+for i=1,6 do assert(not cue[i]:IsShown()) end
+r.specialImpact={};E.ApplyExtraSpecial(r,250,'Magnet',1,2);assert(r.magnet==6)
+A.Close();assert(not fx[1]:IsShown())
+""")
+for name in ['MatchRing','PortalShield','Rewind','Frost','EffectStasis','EffectMagnet','EffectTreasure']:
+ assert (ADDON/'Media'/f'{name}.tga').exists()
+print('PASS: clear lighting, simultaneous status cues, ward shield, magnet duration and reduced motion')
+
+
+lua=runtime()
+lua.execute("""
+local E=A.Engine;local db={};E.Init(db);local r=E.NewRun(db,1)
+r.paused=false;r.balls={{d=400,color=1},{d=375,color=2}};r.head=400;r.magnet=6
+local d=r.balls[1].d;E.Step(db,.05)
+assert(math.abs(r.balls[1].d-d-E.Speed(r)*.5*.05)<.001,'magnet halves forward speed even without gaps')
+r.status='won';E.BeginEnding(r,true);E.Step(db,.05)
+assert(r.effects[#r.effects].kind=='Firework','victory emits fireworks')
+""")
+print('PASS: magnet slows an intact train and wins emit fireworks')

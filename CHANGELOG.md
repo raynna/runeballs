@@ -1,3 +1,11 @@
+# 0.5.28
+
+Match clears, combos and victories now have colour-matched light bursts and spark particles. Active Rewind, Frost, Stasis, Magnet and Treasure show indicators on affected visible balls, including overlapping buffs. Warded exit portals have a clear cyan shield.
+
+Magnet now lasts six seconds, closes gaps faster and halves forward lane speed, making it useful even without gaps. Approved lightning is unchanged. Reduced motion uses steady cues and no flying fragments.
+
+Lua 5.1 gameplay/VFX tests, flight chooser tests and StyLua passed. Both faction renders reviewed offline; these are not live WoW screenshots. Installed to WoW Forever and ZIP verified without touching player saves. Use /reload; restart WoW if newly added textures do not load.
+
 # 0.5.27
 
 Luminous VFX for every special ball.

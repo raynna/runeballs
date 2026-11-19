@@ -594,15 +594,22 @@ local function removeGroup(run, first, last, combo, kind)
     local count = last - first + 1
     local center = run.balls[math.floor((first + last) / 2)]
     local x, y = E.Point(E.Route(run), center.d)
-    run.burst = { x = x, y = y, age = 0, count = count, combo = combo, kind = kind }
+    run.burst = { x = x, y = y, age = 0, count = count, combo = combo, kind = kind, color = center.color }
     for i = last, first, -1 do
         local b = run.balls[i]
         local bx, by = E.Point(E.Route(run), b.d)
         if #run.effects >= 32 then
             table.remove(run.effects, 1)
         end
-        run.effects[#run.effects + 1] =
-            { x = bx, y = by, age = 0, color = b.color, kind = b == center and (kind or 'Spark') or 'Spark' }
+        run.effects[#run.effects + 1] = {
+            x = bx,
+            y = by,
+            age = 0,
+            color = b.color,
+            combo = combo,
+            phase = b.d * 0.013,
+            kind = b == center and (kind or 'Spark') or 'Spark',
+        }
         table.remove(run.balls, i)
     end
     if run.balls[first] and first > 1 then
@@ -817,7 +824,7 @@ local function advanceChain(run, dt)
     if #balls == 0 or (run.stasis or 0) > 0 then
         return
     end
-    local speed = E.Speed(run) * (run.slow > 0 and 0.28 or 1)
+    local speed = E.Speed(run) * (run.slow > 0 and 0.28 or 1) * ((run.magnet or 0) > 0 and 0.5 or 1)
     if run.reverse > 0 then
         local delta = math.min(135 * dt, math.max(0, balls[1].d - 38))
         if balls[1].d - delta <= 38 then
@@ -846,7 +853,7 @@ local function advanceChain(run, dt)
             local rear = balls[group.last + 1]
             local front = balls[group.last]
             local same = front.color == rear.color or front.kind == 'Rainbow' or rear.kind == 'Rainbow'
-            delta = same and -90 * dt or ((run.magnet or 0) > 0 and -70 * dt or 0)
+            delta = same and -90 * dt or ((run.magnet or 0) > 0 and -110 * dt or 0)
             if g == 1 and delta < 0 and (run.magnet or 0) > 0 then
                 delta = math.max(delta, -math.max(0, balls[1].d - 38))
             end
@@ -985,8 +992,9 @@ function E.EndStep(r, dt)
                 x = 380 + math.cos(angle) * 130,
                 y = 250 + math.sin(angle) * 110,
                 age = 0,
-                color = beat % 5 + 1,
-                kind = 'Spark',
+                color = beat % 6 + 1,
+                kind = 'Firework',
+                phase = angle,
             }
         end
         if ending.age >= 1.1 then

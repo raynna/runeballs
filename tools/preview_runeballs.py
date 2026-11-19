@@ -84,7 +84,7 @@ def preview(faction,scene):
   ex,ey=route[-1];px,py=route[-2];angle=-math.degrees(math.atan2((ey-py)*.86,ex-px))
   sprite('Portal',132+ex,155+ey*.86,60,60,angle)
   sprite('PortalSwirl',132+ex,155+ey*.86,28,28)
-  if scene.get('ward') and route is scene['path']:tinted('EffectWard',132+ex,155+ey*.86,46,46,colors[scene.get('loadedColor',6)-1],.65)
+  if scene.get('ward') and route is scene['path']:tinted('PortalShield',132+ex,155+ey*.86,56,56,(.35,.85,1),.85,True)
  for args in auras:aura(*args)
  sprite(faction+'Launcher',512,365,104,104)
  loaded=scene.get('loadedColor',2);kind=scene.get('loadedKind')
@@ -136,6 +136,22 @@ def preview(faction,scene):
     particle_tint=colors[(i-1)%6] if kind=='Rainbow' else tint
     tinted('ImpactLight',px,py,28,28,particle_tint,(1-progress)*.4,True)
     tinted(particles.get(kind,'SpecialSpark'),px,py,(22 if kind=='Frost' else 18)*(1-progress*.6),18*(1-progress*.6),particle_tint,(1-progress)*.9,kind!='Paint',angle=math.degrees(angle+progress*(-4 if rewind else 2)))
+ for e in scene.get('clears',[]):
+  x,y=132+e['x'],155+e['y']*.86;p=e.get('age',.2)/.6;color=colors[e.get('color',2)-1]
+  firework=e.get('kind')=='Firework';strength=2.8 if firework else min(1.5,1+(e.get('combo',1)-1)*.15)
+  radius=(22+p*36)*strength
+  tinted('MatchRing',x,y,radius,radius,color,(1-p)*(.28 if firework else .75),True)
+  tinted('ImpactLight',x,y,radius*1.5,radius*1.5,color,(1-p)**2*.45,True)
+  count=8 if firework else 3
+  for j in range(1,count+1):
+   angle=j*math.pi*2/count+e.get('phase',e['x']*.013);distance=(1-(1-p)**2)*34*strength
+   size=(26 if firework else 10)*(1-p*.75)
+   tinted('BombEmber' if firework else 'StarGlint',x+math.cos(angle)*distance,y+(math.sin(angle)*distance+p*p*18)*.86,size,size,color,1-p,True,angle=math.degrees(angle))
+ for index,(x,y) in enumerate(scene.get('marbles',[])):
+  if scene.get('buff'):
+   color=colors[index%6];x+=132;y=155+y*.86
+   tinted('MatchRing',x,y,29,29,color,.45,True)
+   tinted(scene['buff'],x+15,y,10,10,(1,1,1),.8,True)
  if scene.get('combo'):
   cx,cy=scene['combo']['point']
   text('COMBO! x'+str(scene['combo']['count']),132+cx,155+cy*.86-46,24,True)

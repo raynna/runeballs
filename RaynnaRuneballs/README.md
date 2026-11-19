@@ -1,6 +1,6 @@
 # Raynna's Runeballs
 
-A standalone coloured-marble shooter for WoW Forever (Interface 16001), version 0.5.27.
+A standalone coloured-marble shooter for WoW Forever (Interface 16001), version 0.5.28.
 Aim an arcane launcher into a winding chain and match three or more marbles
 before its leading ball reaches the void portal. Joining matching groups creates
 chain reactions and score multipliers. The 100-round campaign alternates twelve
@@ -40,7 +40,7 @@ Ten types share that chance equally (0.3% per type overall):
 - **Lightning:** zaps up to five exposed same-colour balls, nearest first.
 - **Paint:** recolours up to four nearby ordinary balls within 180 path units; new touching matches resolve after 0.45 seconds as chain combos.
 - **Stasis:** stops lane movement for three seconds; shooting remains available.
-- **Magnet:** pulls separated groups together for four seconds, including unlike colours.
+- **Magnet:** pulls separated groups together for six seconds, including unlike colours, and halves forward lane speed.
 - **Treasure:** doubles subsequent match/clear points on that lane for eight seconds.
 - **Ward:** protects that lane for twelve seconds; one portal breach consumes it and starts a 2.5-second rewind.
 
@@ -240,3 +240,11 @@ light effects on the board, not 3D world lighting. Rebuild the materials with
 tools/build_runeballs_effects.py; tools/preview_runeballs_effects.py renders the
 all-effects review sheet. The release includes six PNGs and an animated Lightning
 preview, all labelled offline renders rather than live client screenshots.
+
+
+Version 0.5.28 adds colour-matched match rings and light fragments, stronger combo
+feedback, multicolour victory fireworks, and a cyan shield around warded exits.
+Active Rewind, Frost, Stasis, Magnet and Treasure have small per-ball indicators,
+including simultaneous buffs; tunnel-hidden marbles remain hidden. Reduced motion
+uses steady indicators and disables flying fragments. Magnet now lasts six seconds,
+pulls unlike gaps at 110 units/sec and halves forward lane speed while active.

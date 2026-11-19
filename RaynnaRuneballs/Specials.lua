@@ -5,7 +5,7 @@ A.Specials = {
         Lightning = 'Lightning: match 3\nZap 5 same-colour balls',
         Paint = 'Paint: match 3\nRecolour nearby balls',
         Stasis = 'Stasis: match 3\nStop this lane for 3s',
-        Magnet = 'Magnet: match 3\nPull gaps closed for 4s',
+        Magnet = 'Magnet: match 3\nPull gaps + slow lane 6s',
         Treasure = 'Treasure: match 3\nDouble match points for 8s',
         Ward = 'Ward: match 3\nOne portal save for 12s',
         Rainbow = 'Rainbow wildcard\nJoins a same-colour pair',
@@ -79,7 +79,7 @@ function E.ApplyExtraSpecial(run, d, kind, combo, color)
     elseif kind == 'Stasis' then
         run.stasis = 3
     elseif kind == 'Magnet' then
-        run.magnet = 4
+        run.magnet = 6
     elseif kind == 'Treasure' then
         run.treasure = 8
     elseif kind == 'Ward' then

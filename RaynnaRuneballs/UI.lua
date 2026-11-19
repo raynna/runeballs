@@ -1,7 +1,7 @@
 local _, A = ...
 local E = A.Engine
 local frame, board
-local balls, aimDots, tracks, effects, fragments = {}, {}, {}, {}, {}
+local balls, aimDots, tracks = {}, {}, {}
 local active = {}
 local clock = 0
 local entrances, bridges = {}, {}
@@ -255,8 +255,8 @@ function A.Draw()
             'CENTER',
             board,
             'TOPLEFT',
-            burst.x,
-            -burst.y * YS + 28 + (A.MotionReduced() and 0 or burst.age * 35)
+            math.max(150, math.min(610, burst.x)),
+            -math.max(40, math.min(390, burst.y * YS - 28 - (A.MotionReduced() and 0 or burst.age * 35)))
         )
         board.combo:SetText(
             (
@@ -267,7 +267,13 @@ function A.Draw()
                 .. '+'
                 .. A.Number(burst.points or burst.count * 100 * burst.combo)
         )
-        board.combo:SetAlpha(math.max(0, 1 - burst.age / (burst.combo > 1 and 0.9 or 0.55)))
+        board.combo:SetFont(board.combo.fontPath, burst.combo > 1 and 25 or 20, board.combo.fontFlags)
+        board.combo:SetScale(
+            A.MotionReduced() and 1 or 1 + math.sin(math.min(1, burst.age / 0.18) * math.pi) * 0.1
+        )
+        board.combo:SetAlpha(
+            math.min(1, math.max(0, (1 - burst.age / (burst.combo > 1 and 0.9 or 0.55)) * 1.5))
+        )
     end
     local message = 'Seal the portal'
     if r.status == 'won' then
@@ -351,61 +357,17 @@ function A.Draw()
     for i = #active, 1, -1 do
         active[i] = nil
     end
-    for _, e in ipairs(r.effects) do
-        active[#active + 1] = e
-    end
-    if r.other then
-        for _, e in ipairs(r.other.effects) do
-            if #active < 32 then
+    -- Share the bounded effect budget between both lanes, newest clears first.
+    for i = 1, 32 do
+        for _, lane in ipairs(r.other and { r, r.other } or { r }) do
+            local e = lane.effects[#lane.effects - i + 1]
+            if e and #active < 32 then
                 active[#active + 1] = e
             end
         end
     end
     A.Visuals.Draw(r, active)
-    for i, e in ipairs(active) do
-        if not effects[i] then
-            effects[i] = A.Art(board.effectLayer, 'Spark', 0, 0, 1, 1, 'OVERLAY')
-        end
-        local t = effects[i]
-        t:SetTexture(A.media .. (e.kind == 'Explosion' and 'BombBurst' or e.kind or 'Spark') .. '.tga')
-        t:SetBlendMode(e.kind == 'Explosion' and 'ADD' or 'BLEND')
-        if e.kind == 'Explosion' then
-            t:SetVertexColor(unpack(A.colors[e.color] or A.colors[6]))
-        else
-            t:SetVertexColor(1, 1, 1)
-        end
-        move(t, e.x, e.y)
-        local size = (e.kind == 'Explosion' and 65 or 24) + e.age * (e.kind == 'Explosion' and 180 or 100)
-        if A.MotionReduced() then
-            size = e.kind == 'Explosion' and 65 or 24
-        end
-        t:SetSize(size, size)
-        t:SetAlpha(math.max(0, 1 - e.age / 0.6))
-        t:SetRotation(A.MotionReduced() and 0 or e.age * 2)
-        t:Show()
-        for j = 1, 3 do
-            local k = (i - 1) * 3 + j
-            if not fragments[k] then
-                fragments[k] = A.Art(board.effectLayer, 'Ball1', 0, 0, 9, 9, 'OVERLAY')
-            end
-            local shard = fragments[k]
-            local angle = j * 2.094 + i
-            shard:SetTexture(shotArt(e.color))
-            move(
-                shard,
-                e.x + math.cos(angle) * e.age * 115,
-                e.y + math.sin(angle) * e.age * 115 + e.age * e.age * 70
-            )
-            shard:SetAlpha(math.max(0, 1 - e.age / 0.6))
-            shard:SetShown(not A.MotionReduced())
-        end
-    end
-    for i = #active + 1, #effects do
-        effects[i]:Hide()
-    end
-    for i = #active * 3 + 1, #fragments do
-        fragments[i]:Hide()
-    end
+    A.Feedback.Draw(board, r, active, clock)
 end
 update = function(_, elapsed)
     clock = clock + math.min(elapsed, 0.1)
