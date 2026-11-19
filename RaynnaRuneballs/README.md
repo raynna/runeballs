@@ -1,6 +1,6 @@
 # Raynna's Runeballs
 
-A standalone coloured-marble shooter for WoW Forever (Interface 16001), version 0.5.26.
+A standalone coloured-marble shooter for WoW Forever (Interface 16001), version 0.5.27.
 Aim an arcane launcher into a winding chain and match three or more marbles
 before its leading ball reaches the void portal. Joining matching groups creates
 chain reactions and score multipliers. The 100-round campaign alternates twelve
@@ -228,3 +228,15 @@ Version 0.5.26 adds six coloured specials, a precision-shot streak mechanic and
 36 new ball sprites with six distinct activation glyphs and lightning arcs.
 Rainbow now clears valid groups on both sides, and powered clears chain into
 caught specials. Regenerate the new sprites with tools/build_runeballs_specials.py.
+
+Version 0.5.27 replaces the activation graphics with luminous 2D VFX for all ten
+specials. Lightning uses sequential branched arcs, bright cores, colour-matched
+bloom and illuminated hit points; its animation survives secondary bomb effects.
+Other powers use glowing shockwaves, icy shards, rewind vortices, prismatic
+sparks, paint splashes, clock rings, magnetic waves, treasure glints and shield
+pulses. The existing idle marble glow and gameplay balance are unchanged.
+Reduced motion removes jumping arcs and flying particles. These are additive UI
+light effects on the board, not 3D world lighting. Rebuild the materials with
+tools/build_runeballs_effects.py; tools/preview_runeballs_effects.py renders the
+all-effects review sheet. The release includes six PNGs and an animated Lightning
+preview, all labelled offline renders rather than live client screenshots.

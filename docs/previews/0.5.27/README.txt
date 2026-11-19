@@ -1,0 +1,1 @@
+Six individual scene PNGs, an all-effects review sheet and an animated Lightning GIF. These are offline rendered VFX demonstrations from shipped materials, not live WoW captures. Regenerate with tools/build_runeballs_gallery.py and tools/preview_runeballs_effects.py.

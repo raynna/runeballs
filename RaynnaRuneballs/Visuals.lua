@@ -18,6 +18,32 @@ local specialColors =
 for _, kind in ipairs({ 'Lightning', 'Paint', 'Stasis', 'Magnet', 'Treasure', 'Ward' }) do
     specialColors[kind] = { 1, 1, 1 }
 end
+local impactTextures = {
+    Bomb = 'BombBurst',
+    Frost = 'FrostBurst',
+    Rewind = 'RewindBurst',
+    Rainbow = 'RainbowBurst',
+    Lightning = 'LightningFlash',
+    Paint = 'PaintBurst',
+    Stasis = 'StasisBurst',
+    Magnet = 'MagnetBurst',
+    Treasure = 'TreasureBurst',
+    Ward = 'WardBurst',
+}
+local particleTextures = {
+    Bomb = 'BombEmber',
+    Rewind = 'EnergyMote',
+    Rainbow = 'StarGlint',
+    Lightning = 'LightningFlash',
+    Paint = 'PaintDrop',
+    Stasis = 'FrostShard',
+    Magnet = 'EnergyMote',
+    Treasure = 'CoinGlint',
+    Ward = 'StarGlint',
+    Frost = 'FrostShard',
+}
+V.impactTextures = impactTextures
+local lightningLists = { 'arcs', 'arcBlooms', 'arcCores', 'hitLights', 'hitFlashes' }
 V.specialBursts = specialBursts
 V.holes = {}
 local function move(t, x, y)
@@ -93,17 +119,42 @@ function V.Build(owner, field)
         holeSparks[i]:Hide()
     end
     for lane = 1, 2 do
-        local burst = { particles = {}, arcs = {} }
+        local burst = { particles = {}, particleLights = {} }
+        for _, key in ipairs(lightningLists) do
+            burst[key] = {}
+        end
         burst.core = A.Art(board.effectLayer, 'Halo', 0, 0, 80, 80, 'OVERLAY')
         burst.core:SetBlendMode('BLEND')
         burst.core:Hide()
+        burst.coreBloom = A.Art(board.effectLayer, 'ImpactLight', 0, 0, 80, 80, 'OVERLAY')
+        burst.coreBloom:SetBlendMode('ADD')
+        burst.coreBloom:Hide()
+        burst.coreHot = A.Art(board.effectLayer, 'ImpactLight', 0, 0, 80, 80, 'OVERLAY')
+        burst.coreHot:SetBlendMode('ADD')
+        burst.coreHot:Hide()
+        burst.impactLight = A.Art(board.effectLayer, 'ImpactLight', 0, 0, 95, 95, 'OVERLAY')
+        burst.impactLight:SetBlendMode('ADD')
+        burst.impactLight:Hide()
+        burst.sourceLight = A.Art(board.effectLayer, 'ImpactLight', 0, 0, 80, 80, 'OVERLAY')
+        burst.sourceLight:SetBlendMode('ADD')
+        burst.sourceLight:Hide()
         for i = 1, 12 do
+            burst.particleLights[i] = A.Art(board.effectLayer, 'ImpactLight', 0, 0, 30, 30, 'OVERLAY')
+            burst.particleLights[i]:SetBlendMode('ADD')
+            burst.particleLights[i]:Hide()
             burst.particles[i] = A.Art(board.effectLayer, 'Spark', 0, 0, 12, 12, 'OVERLAY')
             burst.particles[i]:Hide()
         end
         for i = 1, 5 do
-            burst.arcs[i] = A.Art(board.effectLayer, 'LightningArc', 0, 0, 64, 12, 'OVERLAY')
-            burst.arcs[i]:Hide()
+            for _, key in ipairs(lightningLists) do
+                local texture = key == 'arcBlooms' and 'LightningBloom1'
+                    or key == 'hitLights' and 'ImpactLight'
+                    or key == 'hitFlashes' and 'LightningFlash'
+                    or 'LightningBolt1'
+                burst[key][i] = A.Art(board.effectLayer, texture, 0, 0, 64, 32, 'OVERLAY')
+                burst[key][i]:SetBlendMode('ADD')
+                burst[key][i]:Hide()
+            end
         end
         specialBursts[lane] = burst
     end
@@ -143,8 +194,18 @@ function V.Reset()
     end
     for _, burst in ipairs(specialBursts) do
         burst.core:Hide()
-        for _, arc in ipairs(burst.arcs) do
-            arc:Hide()
+        burst.coreBloom = A.Art(board.effectLayer, 'ImpactLight', 0, 0, 80, 80, 'OVERLAY')
+        burst.coreBloom:SetBlendMode('ADD')
+        burst.coreBloom:Hide()
+        burst.coreHot = A.Art(board.effectLayer, 'ImpactLight', 0, 0, 80, 80, 'OVERLAY')
+        burst.coreHot:SetBlendMode('ADD')
+        burst.coreHot:Hide()
+        burst.impactLight:Hide()
+        burst.sourceLight:Hide()
+        for _, key in ipairs(lightningLists) do
+            for _, texture in ipairs(burst[key]) do
+                texture:Hide()
+            end
         end
         for _, particle in ipairs(burst.particles) do
             particle:Hide()
@@ -196,6 +257,69 @@ function V.Tick(dt, r)
     board:ClearAllPoints()
     board:SetPoint('TOPLEFT', 132 + offset, -155)
 end
+local function drawLightning(burst, impact, reduced)
+    local active = impact and not reduced and impact.age < 1.1
+    burst.sourceLight:SetShown(not not active)
+    local previous = impact and { x = impact.x, y = impact.y }
+    local color = impact and (A.colors[impact.color] or A.colors[6])
+    if active then
+        move(burst.sourceLight, impact.x, impact.y)
+        burst.sourceLight:SetVertexColor(unpack(color))
+        burst.sourceLight:SetAlpha(math.max(0, 1 - impact.age / 0.3) * 0.7)
+    end
+    for i = 1, 5 do
+        local target = active and impact.links and impact.links[i]
+        local age = target and (impact.age - (i - 1) * 0.075) or -1
+        local visible = target and age >= 0 and age < 0.72
+        for _, key in ipairs(lightningLists) do
+            burst[key][i]:SetShown(not not visible)
+        end
+        if visible then
+            local travel = math.min(1, age / 0.045)
+            local endX = previous.x + (target.x - previous.x) * travel
+            local endY = previous.y + (target.y - previous.y) * travel
+            local dx, dy = endX - previous.x, (endY - previous.y) * 0.86
+            local length, angle = math.max(1, math.sqrt(dx * dx + dy * dy)), -math.atan2(dy, dx)
+            local alpha = math.max(0, 1 - age / 0.72)
+            local variant = math.floor(age * 13) % 3 + 1
+            for _, key in ipairs({ 'arcBlooms', 'arcs', 'arcCores' }) do
+                local texture = burst[key][i]
+                move(texture, (previous.x + endX) / 2, (previous.y + endY) / 2)
+                texture:SetSize(length, 32)
+                texture:SetRotation(angle)
+                texture:SetTexture(
+                    A.media
+                        .. (key == 'arcBlooms' and 'LightningBloom' or 'LightningBolt')
+                        .. variant
+                        .. '.tga'
+                )
+                if key == 'arcCores' then
+                    texture:SetVertexColor(
+                        0.75 + color[1] * 0.25,
+                        0.75 + color[2] * 0.25,
+                        0.75 + color[3] * 0.25
+                    )
+                else
+                    texture:SetVertexColor(unpack(color))
+                end
+                texture:SetAlpha(alpha * (key == 'arcBlooms' and 0.85 or key == 'arcs' and 0.9 or 0.75))
+            end
+            local arrival = math.max(0, math.min(1, (age - 0.035) / 0.055)) * alpha
+            local light, flash = burst.hitLights[i], burst.hitFlashes[i]
+            move(light, target.x, target.y)
+            move(flash, target.x, target.y)
+            light:SetSize(45 + arrival * 22, 45 + arrival * 22)
+            light:SetVertexColor(unpack(color))
+            light:SetAlpha(arrival * 0.65)
+            flash:SetSize(13 + arrival * 10, 13 + arrival * 10)
+            flash:SetVertexColor(0.7 + color[1] * 0.3, 0.7 + color[2] * 0.3, 0.7 + color[3] * 0.3)
+            flash:SetAlpha(arrival)
+        end
+        if target then
+            previous = target
+        end
+    end
+end
 function V.Draw(r, active)
     local auraCount = 0
     local animateAuras = not A.MotionReduced() and not r.paused and r.status == 'playing'
@@ -244,11 +368,7 @@ function V.Draw(r, active)
                             sx, sy = x + (i == 1 and -6 or 6), y - 8 - rise * 17
                         end
                         move(spark, sx, sy)
-                        spark:SetTexture(
-                            A.media
-                                .. (A.Specials.descriptions[ball.kind] and ball.kind ~= 'Rainbow' and ('Effect' .. ball.kind) or 'SpecialSpark')
-                                .. '.tga'
-                        )
+                        spark:SetTexture(A.media .. (particleTextures[ball.kind] or 'SpecialSpark') .. '.tga')
                         spark:SetVertexColor(unpack(color))
                         spark:SetRotation(-angle)
                         spark:SetAlpha(0.45 + pulse * 0.5)
@@ -268,90 +388,120 @@ function V.Draw(r, active)
     for lane, burst in ipairs(specialBursts) do
         local state = lane == 1 and r or r.other
         local impact = state and state.specialImpact
+        drawLightning(
+            burst,
+            state and (state.lightningImpact or (impact and impact.kind == 'Lightning' and impact)),
+            A.MotionReduced()
+        )
+        burst.coreBloom:SetShown(
+            impact ~= nil and impactTextures[impact.kind] ~= nil and impact.kind ~= 'Lightning'
+        )
+        burst.coreHot:SetShown(
+            impact ~= nil
+                and impactTextures[impact.kind] ~= nil
+                and impact.kind ~= 'Lightning'
+                and impact.kind ~= 'Paint'
+        )
+        burst.impactLight:SetShown(impact ~= nil)
         burst.core:SetShown(impact ~= nil)
         if impact then
             local progress = math.min(1, impact.age / 1.1)
             local reduced = A.MotionReduced()
-            local color = A.colors[impact.color] or A.colors[6]
+            local color = impact.kind == 'Rainbow' and lightColor(impact.color, 'Rainbow', not reduced)
+                or A.colors[impact.color]
+                or A.colors[6]
             local rewind = impact.kind == 'Rewind'
-            local extra = A.Specials.descriptions[impact.kind] and impact.kind ~= 'Rainbow'
+            local extra = impactTextures[impact.kind] ~= nil
             burst.core:SetTexture(
                 A.media
-                    .. (extra and ('Effect' .. impact.kind) or rewind and 'PortalSwirl' or 'SpecialRing')
+                    .. (impactTextures[impact.kind] or (rewind and 'PortalSwirl' or 'SpecialRing'))
                     .. '.tga'
             )
+            burst.core:SetBlendMode(extra and 'ADD' or 'BLEND')
             burst.core:SetVertexColor(unpack(color))
+            move(burst.impactLight, impact.x, impact.y)
+            burst.impactLight:SetVertexColor(unpack(color))
+            burst.impactLight:SetAlpha((1 - progress) ^ 2 * (reduced and 0.15 or 0.35))
             move(burst.core, impact.x, impact.y)
             local size = reduced and 55 or rewind and (85 - progress * 45) or (40 + progress * 100)
+            if impact.kind == 'Lightning' then
+                size = reduced and 32 or 26 + progress * 16
+            end
             burst.core:SetSize(size, size)
             burst.core:SetAlpha((1 - progress) * 0.95)
             burst.core:SetRotation(not reduced and (rewind or impact.kind == 'Magnet') and -progress * 5 or 0)
-            local previous = { x = impact.x, y = impact.y }
-            for i, arc in ipairs(burst.arcs) do
-                local target = impact.links and impact.links[i]
-                local visible = target and impact.kind == 'Lightning' and not reduced
-                arc:SetShown(not not visible)
-                if visible then
-                    local dx, dy = target.x - previous.x, (target.y - previous.y) * 0.86
-                    move(arc, (previous.x + target.x) / 2, (previous.y + target.y) / 2)
-                    arc:SetSize(math.max(1, math.sqrt(dx * dx + dy * dy)), 12)
-                    arc:SetRotation(-math.atan2(dy, dx))
-                    arc:SetVertexColor(unpack(color))
-                    arc:SetAlpha((1 - progress) * 0.85)
-                    previous = target
+            if impact.kind ~= 'Lightning' and impactTextures[impact.kind] then
+                local rotation = not reduced and (rewind or impact.kind == 'Magnet') and -progress * 5 or 0
+                for _, layer in ipairs({ burst.coreBloom, burst.coreHot }) do
+                    move(layer, impact.x, impact.y)
+                    layer:SetSize(size, size)
+                    layer:SetRotation(rotation)
                 end
+                burst.coreBloom:SetTexture(A.media .. impactTextures[impact.kind] .. 'Glow.tga')
+                burst.coreBloom:SetVertexColor(unpack(color))
+                burst.coreBloom:SetAlpha((1 - progress) * 0.7)
+                burst.coreHot:SetTexture(A.media .. impactTextures[impact.kind] .. '.tga')
+                burst.coreHot:SetVertexColor(
+                    0.65 + color[1] * 0.35,
+                    0.65 + color[2] * 0.35,
+                    0.65 + color[3] * 0.35
+                )
+                burst.coreHot:SetAlpha((1 - progress) * 0.35)
             end
             for i, particle in ipairs(burst.particles) do
-                particle:SetShown(not reduced)
-                if not reduced then
+                local light = burst.particleLights[i]
+                local visible = not reduced and impact.kind ~= 'Lightning'
+                particle:SetShown(visible)
+                light:SetShown(visible)
+                if visible then
                     local angle = i * math.pi / 6 + (rewind and -progress * 4 or 0)
-                    local radius = rewind and (65 * (1 - progress))
-                        or (10 + progress * (i % 2 == 0 and 70 or 45))
-                    local gravity = impact.kind == 'Bomb' and progress * progress * 35 or 0
-                    move(
-                        particle,
-                        impact.x + math.cos(angle) * radius,
-                        impact.y + math.sin(angle) * radius + gravity
-                    )
+                    local radius = rewind and 65 * (1 - progress) or 10 + progress * (i % 2 == 0 and 70 or 45)
+                    local px = impact.x + math.cos(angle) * radius
+                    local py = impact.y
+                        + math.sin(angle) * radius
+                        + (impact.kind == 'Bomb' and progress * progress * 35 or 0)
                     if impact.kind == 'Bomb' and impact.d then
                         local direction = i <= 6 and -1 or 1
-                        local distance = impact.d + direction * progress * 90 * (0.5 + (i % 6) / 10)
-                        local x, y = A.Engine.Point(impact.route or A.Engine.Route(state), distance)
-                        move(particle, x + math.cos(angle) * 8, y + math.sin(angle) * 8)
-                    end
-                    if impact.kind == 'Paint' and impact.links and impact.links[i] then
-                        local target = impact.links[i]
-                        move(
-                            particle,
-                            impact.x + (target.x - impact.x) * math.min(1, progress * 2.5),
-                            impact.y + (target.y - impact.y) * math.min(1, progress * 2.5)
+                        px, py = A.Engine.Point(
+                            impact.route or A.Engine.Route(state),
+                            impact.d + direction * progress * 90 * (0.5 + (i % 6) / 10)
                         )
+                        px, py = px + math.cos(angle) * 8, py + math.sin(angle) * 8
+                    elseif impact.kind == 'Paint' and impact.links and impact.links[i] then
+                        local target = impact.links[i]
+                        px = impact.x + (target.x - impact.x) * math.min(1, progress * 2.5)
+                        py = impact.y + (target.y - impact.y) * math.min(1, progress * 2.5)
                     elseif impact.kind == 'Treasure' then
-                        move(particle, impact.x + math.cos(angle) * 35, impact.y - progress * 90 + i % 3 * 12)
+                        px, py = impact.x + math.cos(angle) * 35, impact.y - progress * 90 + i % 3 * 12
                     elseif impact.kind == 'Magnet' then
-                        move(
-                            particle,
+                        px, py =
                             impact.x + math.cos(angle) * 70 * (1 - progress),
                             impact.y + math.sin(angle) * 70 * (1 - progress)
-                        )
                     elseif impact.kind == 'Stasis' then
-                        move(particle, impact.x + math.cos(angle) * 45, impact.y + math.sin(angle) * 45)
+                        px, py = impact.x + math.cos(angle) * 45, impact.y + math.sin(angle) * 45
                     end
+                    local tint = impact.kind == 'Rainbow' and A.colors[(i - 1) % 6 + 1] or color
+                    move(particle, px, py)
+                    move(light, px, py)
                     particle:SetTexture(
-                        A.media .. (extra and ('Effect' .. impact.kind) or 'SpecialSpark') .. '.tga'
+                        A.media .. (particleTextures[impact.kind] or 'SpecialSpark') .. '.tga'
                     )
-                    particle:SetVertexColor(unpack(color))
+                    particle:SetBlendMode(impact.kind == 'Paint' and 'BLEND' or 'ADD')
+                    particle:SetVertexColor(unpack(tint))
                     particle:SetSize(
                         (impact.kind == 'Frost' and 22 or 18) * (1 - progress * 0.6),
                         18 * (1 - progress * 0.6)
                     )
                     particle:SetRotation(angle + progress * (rewind and -4 or 2))
                     particle:SetAlpha((1 - progress) * 0.9)
+                    light:SetVertexColor(unpack(tint))
+                    light:SetSize(28, 28)
+                    light:SetAlpha((1 - progress) * 0.4)
                 end
             end
         else
-            for _, arc in ipairs(burst.arcs) do
-                arc:Hide()
+            for _, light in ipairs(burst.particleLights) do
+                light:Hide()
             end
             for _, particle in ipairs(burst.particles) do
                 particle:Hide()

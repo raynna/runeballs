@@ -41,6 +41,24 @@ function E.ApplyExtraSpecial(run, d, kind, combo, color)
             impact.links[#impact.links + 1] = { x = x, y = y }
             indices[#indices + 1] = target.index
         end
+        -- Visual hop order follows the nearest screen-space target. Selection
+        -- and damage still use exactly the same five path-distance targets.
+        local remaining, ordered = impact.links, {}
+        local originX, originY = E.Point(E.Route(run), d)
+        local previous = { x = originX, y = originY }
+        while #remaining > 0 do
+            local nearest, distance = 1, math.huge
+            for i, point in ipairs(remaining) do
+                local delta = (point.x - previous.x) ^ 2 + ((point.y - previous.y) * 0.86) ^ 2
+                if delta < distance then
+                    nearest, distance = i, delta
+                end
+            end
+            previous = table.remove(remaining, nearest)
+            ordered[#ordered + 1] = previous
+        end
+        impact.links = ordered
+        run.lightningImpact = impact
         table.sort(indices, function(a, b)
             return a > b
         end)

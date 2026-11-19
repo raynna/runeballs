@@ -367,7 +367,13 @@ function A.Draw()
             effects[i] = A.Art(board.effectLayer, 'Spark', 0, 0, 1, 1, 'OVERLAY')
         end
         local t = effects[i]
-        t:SetTexture(A.media .. (e.kind or 'Spark') .. '.tga')
+        t:SetTexture(A.media .. (e.kind == 'Explosion' and 'BombBurst' or e.kind or 'Spark') .. '.tga')
+        t:SetBlendMode(e.kind == 'Explosion' and 'ADD' or 'BLEND')
+        if e.kind == 'Explosion' then
+            t:SetVertexColor(unpack(A.colors[e.color] or A.colors[6]))
+        else
+            t:SetVertexColor(1, 1, 1)
+        end
         move(t, e.x, e.y)
         local size = (e.kind == 'Explosion' and 65 or 24) + e.age * (e.kind == 'Explosion' and 180 or 100)
         if A.MotionReduced() then

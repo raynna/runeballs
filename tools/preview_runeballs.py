@@ -95,26 +95,47 @@ def preview(faction,scene):
   x,y=impact['point'];x+=132;y=155+y*.86
   progress=impact.get('progress',.35);kind=impact['kind'];tint=colors[impact['color']-1]
   rewind=kind=='Rewind';size=85-progress*45 if rewind else 40+progress*100
-  extra=kind in ('Lightning','Paint','Stasis','Magnet','Treasure','Ward')
-  tinted('Effect'+kind if extra else 'PortalSwirl' if rewind else 'SpecialRing',x,y,size,size,tint,(1-progress)*.95,angle=math.degrees(-progress*5) if rewind or kind=='Magnet' else 0)
+  impact_textures={'Bomb':'BombBurst','Frost':'FrostBurst','Rewind':'RewindBurst','Rainbow':'RainbowBurst','Lightning':'LightningFlash','Paint':'PaintBurst','Stasis':'StasisBurst','Magnet':'MagnetBurst','Treasure':'TreasureBurst','Ward':'WardBurst'}
+  particles={'Bomb':'BombEmber','Rewind':'EnergyMote','Rainbow':'StarGlint','Paint':'PaintDrop','Stasis':'FrostShard','Magnet':'EnergyMote','Treasure':'CoinGlint','Ward':'StarGlint','Frost':'FrostShard'}
+  extra=kind in impact_textures
+  tinted('ImpactLight',x,y,95,95,tint,(1-progress)**2*.35,True)
+  if kind=='Lightning':size=26+progress*16
+  tinted(impact_textures.get(kind,'PortalSwirl' if rewind else 'SpecialRing'),x,y,size,size,tint,(1-progress)*.95,extra,angle=math.degrees(-progress*5) if rewind or kind=='Magnet' else 0)
+  if kind!='Lightning':
+   rotation=math.degrees(-progress*5) if rewind or kind=='Magnet' else 0
+   tinted(impact_textures[kind]+'Glow',x,y,size,size,tint,(1-progress)*.7,True,angle=rotation)
+   if kind!='Paint':tinted(impact_textures[kind],x,y,size,size,tuple(.65+v*.35 for v in tint),(1-progress)*.35,True,angle=rotation)
   if kind=='Lightning':
+   age=progress*1.1
+   tinted('ImpactLight',x,y,80,80,tint,max(0,1-age/.3)*.7,True)
    previous=(x,y)
-   for tx,ty in impact.get('links',[]):
-    target=(132+tx,155+ty*.86);dx,dy=target[0]-previous[0],target[1]-previous[1]
-    tinted('LightningArc',(target[0]+previous[0])/2,(target[1]+previous[1])/2,max(1,math.hypot(dx,dy)),12,tint,(1-progress)*.85,angle=-math.degrees(math.atan2(dy,dx)))
+   for index,(tx,ty) in enumerate(impact.get('links',[])):
+    target=(132+tx,155+ty*.86);local_age=age-index*.075
+    if 0<=local_age<.72:
+     travel=min(1,local_age/.045);end=(previous[0]+(target[0]-previous[0])*travel,previous[1]+(target[1]-previous[1])*travel)
+     dx,dy=end[0]-previous[0],end[1]-previous[1];alpha=1-local_age/.72;variant=int(local_age*13)%3+1
+     center=((end[0]+previous[0])/2,(end[1]+previous[1])/2)
+     for texture,color,opacity in [('LightningBloom',tint,.85),('LightningBolt',tint,.9),('LightningBolt',tuple(.75+v*.25 for v in tint),.75)]:
+      tinted(texture+str(variant),*center,max(1,math.hypot(dx,dy)),32,color,alpha*opacity,True,angle=-math.degrees(math.atan2(dy,dx)))
+     arrival=max(0,min(1,(local_age-.035)/.055))*alpha
+     tinted('ImpactLight',*target,45+arrival*22,45+arrival*22,tint,arrival*.65,True)
+     tinted('LightningFlash',*target,13+arrival*10,13+arrival*10,tuple(.7+v*.3 for v in tint),arrival,True)
     previous=target
-  for i in range(1,13):
-   angle=i*math.pi/6+(-progress*4 if rewind else 0)
-   radius=65*(1-progress) if rewind else 10+progress*(70 if i%2==0 else 45)
-   px=x+math.cos(angle)*radius;py=y+math.sin(angle)*radius*.86
-   if kind=='Bomb' and 'particles' in impact:
-    px,py=impact['particles'][i-1];px+=132;py=155+py*.86
-   if kind=='Paint' and i<=len(impact.get('links',[])):
-    tx,ty=impact['links'][i-1];px=x+(132+tx-x)*min(1,progress*2.5);py=y+(155+ty*.86-y)*min(1,progress*2.5)
-   elif kind=='Treasure':px=x+math.cos(angle)*35;py=y+(-progress*90+i%3*12)*.86
-   elif kind=='Magnet':px=x+math.cos(angle)*70*(1-progress);py=y+math.sin(angle)*70*(1-progress)*.86
-   elif kind=='Stasis':px=x+math.cos(angle)*45;py=y+math.sin(angle)*45*.86
-   tinted('Effect'+kind if extra else 'SpecialSpark',px,py,(22 if kind=='Frost' else 18)*(1-progress*.6),18*(1-progress*.6),tint,(1-progress)*.9,angle=math.degrees(angle+progress*(-4 if rewind else 2)))
+  else:
+   for i in range(1,13):
+    angle=i*math.pi/6+(-progress*4 if rewind else 0)
+    radius=65*(1-progress) if rewind else 10+progress*(70 if i%2==0 else 45)
+    px=x+math.cos(angle)*radius;py=y+math.sin(angle)*radius*.86
+    if kind=='Bomb' and 'particles' in impact:
+     px,py=impact['particles'][i-1];px+=132;py=155+py*.86
+    if kind=='Paint' and i<=len(impact.get('links',[])):
+     tx,ty=impact['links'][i-1];px=x+(132+tx-x)*min(1,progress*2.5);py=y+(155+ty*.86-y)*min(1,progress*2.5)
+    elif kind=='Treasure':px=x+math.cos(angle)*35;py=y+(-progress*90+i%3*12)*.86
+    elif kind=='Magnet':px=x+math.cos(angle)*70*(1-progress);py=y+math.sin(angle)*70*(1-progress)*.86
+    elif kind=='Stasis':px=x+math.cos(angle)*45;py=y+math.sin(angle)*45*.86
+    particle_tint=colors[(i-1)%6] if kind=='Rainbow' else tint
+    tinted('ImpactLight',px,py,28,28,particle_tint,(1-progress)*.4,True)
+    tinted(particles.get(kind,'SpecialSpark'),px,py,(22 if kind=='Frost' else 18)*(1-progress*.6),18*(1-progress*.6),particle_tint,(1-progress)*.9,kind!='Paint',angle=math.degrees(angle+progress*(-4 if rewind else 2)))
  if scene.get('combo'):
   cx,cy=scene['combo']['point']
   text('COMBO! x'+str(scene['combo']['count']),132+cx,155+cy*.86-46,24,True)

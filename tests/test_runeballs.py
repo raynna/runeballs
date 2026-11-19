@@ -15,7 +15,7 @@ def runtime():
             f.CreateFontString=function(self) return create('FontString',nil,self) end
             f.SetBackdrop=function(self,data) self.backdrop=data end
             f.CreateTexture=function(self,name,layer)
-                local t=create('Texture',name,self);t.SetVertexColor=function(self,...) self.tint={...} end;t.drawLayer=layer;t.SetAlpha=function(self,v) self.alpha=v end;return t
+                local t=create('Texture',name,self);t.SetVertexColor=function(self,...) self.tint={...} end;t.drawLayer=layer;t.SetBlendMode=function(self,value) self.blendMode=value end;t.SetAlpha=function(self,v) self.alpha=v end;return t
             end
             return f
         end
@@ -931,7 +931,7 @@ for _,kind in ipairs({'Lightning','Paint','Stasis','Magnet','Treasure','Ward'}) 
  r.balls={{color=3,kind=kind,d=400},{color=2,d=375},{color=3,d=350},{color=3,d=325}}
  E.Special(r,1,kind);A.Draw()
  local fx=A.Visuals.specialBursts[1]
- assert(fx.core.texture==A.media..'Effect'..kind..'.tga' and fx.core:IsShown())
+ assert(fx.core.texture==A.media..A.Visuals.impactTextures[kind]..'.tga' and fx.core:IsShown())
  assert(A.Visuals.ammoLight:IsShown() and A.Visuals.ammoLight.tint[2]==A.colors[3][2])
  if kind=='Lightning' then assert(fx.arcs[1]:IsShown()) end
  A.db.options.reducedMotion=true;A.Draw()
@@ -959,3 +959,64 @@ E.Step(db,.01);assert(r.precision==3 and r.score==600 and r.streakNotice.points=
 r.shot={x=759,y=1,vx=1040,vy=0,color=1};E.Step(db,.01);assert(r.precision==0)
 """)
 print('PASS: wildcard insertion, secondary ward and projectile-driven precision rewards')
+
+# Layered lightning progresses between targets without losing the visual to cascades.
+vfx=runtime()
+vfx.execute("""
+A.events.OnEvent(A.events,'ADDON_LOADED','RaynnaRuneballs');A.events.OnEvent(A.events,'PLAYER_LOGIN');A.Open(false)
+local E=A.Engine;local r=E.NewRun(A.db,1);r.paused=false
+local impact={kind='Lightning',color=2,x=100,y=100,age=0,links={}}
+for i=1,5 do impact.links[i]={x=100+i*70,y=100+i%2*50} end
+r.specialImpact=impact;r.lightningImpact=impact;A.Draw()
+local fx=A.Visuals.specialBursts[1]
+assert(fx.arcs[1]:IsShown() and not fx.arcs[2]:IsShown(),'lightning begins with one hop')
+assert(fx.arcBlooms[1].blendMode=='ADD' and fx.arcCores[1].blendMode=='ADD')
+assert(fx.arcBlooms[1].parent==A.board.effectLayer and fx.hitLights[1].parent==A.board.effectLayer)
+E.Animate(r,.16);A.Draw()
+assert(math.abs(impact.age-.16)<.000001,'shared visual record advances once')
+assert(fx.arcs[3]:IsShown() and not fx.arcs[4]:IsShown(),'hops reveal in sequence')
+assert(fx.hitLights[1].alpha>0 and fx.hitFlashes[1].alpha>0,'arrival illuminates the hit point')
+assert(fx.arcBlooms[1].tint[2]==A.colors[2][2] and fx.arcCores[1].tint[1]>A.colors[2][1],'colour bloom and bright core stay separate')
+local count=#Frames;A.Draw();assert(#Frames==count,'effect pools are reused')
+r.specialImpact={kind='Bomb',color=1,x=200,y=100,age=0};E.Animate(r,.2);A.Draw()
+assert(fx.arcs[5]:IsShown() and r.lightningImpact==impact,'later special does not erase chain lightning')
+local age=impact.age;r.paused=true;E.Step(A.db,.05);assert(impact.age==age,'pause freezes lightning')
+E.Init(A.db);assert(r.paused and r.lightningImpact==impact and impact.age==age,'reload preserves and pauses the lightning record')
+A.db.options.reducedMotion=true;A.Draw()
+assert(not fx.sourceLight:IsShown())
+for _,key in ipairs({'arcs','arcBlooms','arcCores','hitLights','hitFlashes'}) do
+ for _,texture in ipairs(fx[key]) do assert(not texture:IsShown(),'reduced motion removes jumping lights') end
+end
+A.db.options.reducedMotion=false;r.paused=false;E.Animate(r,1.2);A.Draw()
+assert(not r.lightningImpact and not fx.arcs[1]:IsShown() and not fx.impactLight:IsShown())
+r=E.NewRun(A.db,1);r.paused=false;r.remaining=0
+r.balls={{color=2,d=500},{color=2,d=475,kind='Lightning'},{color=2,d=450},{color=1,d=425},{color=2,d=400,kind='Bomb'},{color=1,d=375}}
+E.Match(r,2);assert(r.lightningImpact and r.specialImpact.kind=='Bomb','real bomb cascade retains lightning record')
+A.Draw();assert(fx.arcs[1]:IsShown());A.Close()
+assert(not fx.sourceLight:IsShown() and not fx.impactLight:IsShown())
+for _,key in ipairs({'arcs','arcBlooms','arcCores','hitLights','hitFlashes'}) do
+ for _,texture in ipairs(fx[key]) do assert(not texture:IsShown(),'close clears every light layer') end
+end
+""")
+print('PASS: additive chain lightning, sequential hops, hit illumination, cascade retention, pause, reduced motion and cleanup')
+
+vfx.execute("""
+A.Open(false);A.db.options.reducedMotion=false
+for _,kind in ipairs({'Bomb','Frost','Rewind','Rainbow','Paint','Stasis','Magnet','Treasure','Ward'}) do
+ local r=A.Engine.NewRun(A.db,30);r.paused=false
+ r.other.specialImpact={x=350,y=150,kind=kind,color=3,age=.2,links={}}
+ A.Draw();local fx=A.Visuals.specialBursts[2]
+ assert(fx.core.texture==A.media..A.Visuals.impactTextures[kind]..'.tga')
+ assert(fx.coreBloom:IsShown() and fx.coreBloom.blendMode=='ADD')
+ assert(fx.coreBloom.texture==A.media..A.Visuals.impactTextures[kind]..'Glow.tga')
+ assert(fx.particleLights[1]:IsShown() and fx.particleLights[1].blendMode=='ADD','all specials illuminate particles')
+ if kind=='Rainbow' then
+  assert(fx.particleLights[1].tint[1]~=fx.particleLights[2].tint[1],'rainbow has multicolour light')
+ else assert(fx.particleLights[1].tint[2]==A.colors[3][2],'coloured powers keep matching light') end
+ A.db.options.reducedMotion=true;A.Draw()
+ for _,light in ipairs(fx.particleLights) do assert(not light:IsShown()) end
+ A.Close();assert(not fx.coreBloom:IsShown() and not fx.coreHot:IsShown())
+ A.db.options.reducedMotion=false;A.Open(false)
+end
+""")
+print('PASS: all ten dedicated VFX, luminous particles, rainbow colours and cleanup')

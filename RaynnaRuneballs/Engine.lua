@@ -915,11 +915,17 @@ function E.Animate(r, dt)
             end
         end
     end
+    if r.lightningImpact and r.lightningImpact ~= r.specialImpact then
+        r.lightningImpact.age = r.lightningImpact.age + dt
+    end
     if r.specialImpact then
         r.specialImpact.age = r.specialImpact.age + dt
         if r.specialImpact.age >= 1.1 then
             r.specialImpact = nil
         end
+    end
+    if r.lightningImpact and r.lightningImpact.age >= 1.1 then
+        r.lightningImpact = nil
     end
     for i = #r.effects, 1, -1 do
         r.effects[i].age = r.effects[i].age + dt

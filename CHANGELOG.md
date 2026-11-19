@@ -1,3 +1,17 @@
+# 0.5.27
+
+Luminous VFX for every special ball.
+
+- Lightning: bright branched cores, colour-matched bloom, sequential jumps and illuminated impact points. The approved appearance is retained.
+- Bomb: expanding glowing shockwave and ember streaks. Frost: crystalline burst and luminous shards. Rewind: coloured inward vortex. Rainbow: prismatic light and multicolour sparkles.
+- Paint: glowing splashes and droplets. Stasis: luminous clock ring. Magnet: contracting energy waves. Treasure: glowing coin glints. Ward: radiant shield pulse.
+- All effects stay above the roads and use pooled textures. Ordinary and idle special-ball glow, matching mechanics, 3% total special chance and speed balance are unchanged.
+- Fixed chain-lightning visuals being erased when another special triggers. Pausing, reloading, expiry, closing and reduced motion are covered by tests.
+
+Lua 5.1 gameplay/VFX and flight-game tests and StyLua passed. All ten effects and both faction renders reviewed offline. Player ZIP and installed files verified; saves preserved. Use /reload. If new textures remain missing, restart WoW.
+
+Six individual PNG previews and an animated Lightning GIF are attached. These are labelled rendered demonstrations, not live WoW screenshots.
+
 # 0.5.26
 
 Six new specials, precision streaks and chain-reaction fixes.
