@@ -87,7 +87,7 @@ local random=math.random
 for _,case in ipairs({{roll=3,kind=1,expected='Bomb'},{roll=4},{roll=1,kind=3,expected='Rewind'},{roll=100},{roll=2,kind=2,expected='Frost'}}) do
  math.random=function(n)
   if n==100 then return case.roll end
-  if n==4 then return case.kind or 1 end
+  if n==10 then return case.kind or 1 end
   return 1
  end
  r.shot=nil;r.cooldown=0;assert(E.Fire(r,10,10))
@@ -688,7 +688,7 @@ for i=1,11 do r.balls[i]={color=i%2+2,d=600-i*25} end
 r.balls[5].color=1;r.balls[6].color=1;r.balls[7].color=1;r.balls[6].kind='Bomb';r.balls[4].kind='Frost'
 assert(E.Match(r,6)==1 and #r.balls==4 and r.score==700)
 assert(r.balls[1].d==575 and r.balls[2].d==550 and r.balls[3].d==350 and r.balls[4].d==325,'bomb clears three original neighbours per side')
-assert(not r.slow or r.slow==0,'unmatched collateral specials do not activate')
+assert(r.slow==4,'bomb blast activates a caught Frost ball')
 r=E.NewRun(db,1);r.remaining=0;r.paused=false;r.balls={{color=2,d=350}}
 local x,y=E.Point(1,350);r.shot={x=x-35,y=y,vx=1040,vy=0,color=1,kind='Rewind'}
 E.Step(db,.05)
@@ -773,7 +773,7 @@ assert(E.Match(r,2)==0,'wildcard respects gaps')
 for i=1,100 do E.Step(db,.01) end
 assert(#r.balls==0,'wildcard closes a matching gap and triggers the contact match')
 r=chain({{color=1,d=400},{color=1,d=375},{color=6,kind='Rainbow',d=350},{color=2,d=325},{color=2,d=300},{color=2,d=275}})
-assert(E.Match(r,3)==1 and #r.balls==2 and r.balls[1].color==1,'wildcard chooses largest single-colour group')
+assert(E.Match(r,3)==1 and #r.balls==0 and r.score==600,'wildcard clears both independently valid colour groups once')
 local random=math.random
 math.random=function(n) return n==100 and 3 or 4 end
 assert(E.RollSpecial()=='Rainbow','fourth special within existing probability gate')
@@ -831,3 +831,131 @@ for _,value in ipairs({true,false}) do
 end
 """)
 print('PASS: close-after-flight defaults off, settings callbacks and saved preferences')
+
+# New specials, protected tunnels, timer persistence and reaction chains.
+new=runtime()
+new.execute("""
+local E=A.Engine;local db={};E.Init(db)
+local kinds={'Lightning','Paint','Stasis','Magnet','Treasure','Ward'}
+local function fresh(level)
+ local r=E.NewRun(db,level or 1);r.paused=false;r.remaining=0;r.balls={};return r
+end
+for _,kind in ipairs(kinds) do
+ for color=1,6 do
+  local r=fresh();r.balls={{color=color,d=400,kind=kind},{color=color,d=375}}
+  assert(E.Match(r,1)==0 and not r.specialImpact,'two alone never activate')
+  r.balls[3]={color=color,d=350};assert(E.Match(r,1)==1 and r.specialImpact.kind==kind)
+ end
+end
+local random=math.random;local counts={}
+for roll=1,100 do for choice=1,10 do
+ math.random=function(n) return n==100 and roll or choice end
+ local kind=E.RollSpecial();if kind then counts[kind]=(counts[kind] or 0)+1 end
+end end
+math.random=random
+local total=0;for _,count in pairs(counts) do assert(count==3);total=total+count end
+assert(total==30,'ten specials share exactly 3 percent total, not 3 percent each')
+-- Lightning prioritizes nearest same-colour balls and ignores covered targets.
+local r=fresh(30);local lane=r.other;lane.paused=false;lane.remaining=0
+local covered=E.Crossings(30)[1].under
+lane.balls={{color=2,d=covered,kind='Frost'}}
+for i=1,7 do lane.balls[#lane.balls+1]={color=2,d=E.Path(1030).length-200-i*25} end
+lane.balls[#lane.balls+1]={color=3,d=50}
+table.sort(lane.balls,function(a,b)return a.d>b.d end)
+lane.specialImpact={};E.ApplyExtraSpecial(lane,100,'Lightning',1,2)
+assert(#lane.balls==4 and #lane.specialImpact.links==5)
+local hidden=false;for _,b in ipairs(lane.balls) do if b.d==covered then hidden=true end end
+assert(hidden,'hidden matching special survives lightning')
+-- Paint shows the new colour, then awards a delayed x2 match without painting specials.
+r=fresh();r.stasis=1;r.balls={{color=1,d=400},{color=2,d=375},{color=3,d=350},{color=4,d=325},{color=6,d=300,kind='Ward'}}
+r.specialImpact={age=0};E.ApplyExtraSpecial(r,425,'Paint',1,5)
+assert(#r.balls==5 and r.balls[1].color==5 and r.balls[4].color==5 and r.balls[5].color==6)
+E.Step(db,.05);assert(#r.balls==5,'paint does not clear instantly')
+local countdown=r.balls[1].paintDelay;E.Init(db);E.Step(db,.05);assert(r.balls[1].paintDelay==countdown,'paint countdown pauses on reload')
+r.paused=false;for i=1,9 do E.Step(db,.05) end
+assert(#r.balls==1 and r.balls[1].kind=='Ward' and r.score==800,'paint resolves delayed combo and preserves other specials')
+-- Stasis stops travel, keeps shots available and resumes after its duration.
+r=fresh();r.balls={{color=1,d=400},{color=2,d=375}};r.stasis=3;r.reverse=1
+local d=r.balls[1].d;E.Step(db,.05);assert(r.balls[1].d==d and r.reverse==1)
+assert(E.Fire(r,0,0));r.shot=nil;r.reverse=0
+E.Init(db);local t=r.stasis;E.Step(db,.05);assert(r.stasis==t)
+r.paused=false;for i=1,61 do E.Step(db,.05) end;assert(r.balls[1].d>d)
+-- Magnet pulls unlike groups together, retaining ordered spacing and entry visibility.
+r=fresh();r.balls={{color=1,d=400},{color=2,d=300}};r.magnet=4
+E.Step(db,.05);assert(r.balls[1].d<400 and r.balls[2].d>300)
+for i=1,80 do E.Step(db,.05);assert(r.balls[1].d-r.balls[2].d>=24.999) end
+r=fresh();r.balls={{color=1,d=38},{color=2,d=-30}};r.magnet=4
+E.Step(db,.05);assert(r.balls[1].d>=38)
+-- Treasure doubles subsequent match points, while timers remain lane-local.
+r=fresh();r.treasure=8;r.balls={{color=2,d=400},{color=2,d=375},{color=2,d=350}}
+E.Match(r,1);assert(r.score==600 and r.burst.points==600)
+r=fresh(30);r.treasure=8;assert(not r.other.treasure)
+-- Ward catches precisely one breach; a second unprotected breach loses the run.
+r=fresh();local length=E.Path(1).length;r.balls={{color=1,d=length-.01},{color=2,d=length-25.01}};r.ward=12;r.wardColor=2
+E.Step(db,.05);assert(r.status=='playing' and r.ward==0 and r.reverse==2.5 and r.head<length)
+assert(math.abs(r.balls[1].d-r.balls[2].d-25)<.000001)
+r.reverse=0;r.balls={{color=1,d=length-.01}};E.Step(db,.05);assert(r.status=='lost')
+-- Shared rainbow qualifies each side separately and does not double-count itself.
+r=fresh();r.balls={{color=6,d=400},{color=6,d=375},{color=1,kind='Rainbow',d=350},{color=2,d=325},{color=2,d=300}}
+assert(E.Match(r,3)==1 and #r.balls==0 and r.score==500)
+r=fresh();r.balls={{color=6,d=400},{color=6,d=375},{color=1,kind='Rainbow',d=350},{color=2,d=325}}
+E.Match(r,3);assert(#r.balls==1 and r.balls[1].color==2,'one blue alone does not qualify')
+r=fresh();r.balls={{color=6,d=400},{color=6,d=375},{color=1,kind='Rainbow',d=350},{color=2,d=300},{color=2,d=275}}
+E.Match(r,3);assert(#r.balls==2,'rainbow cannot match across a gap')
+-- Dense bomb chain terminates, with every caught special activating once.
+r=fresh();for i=1,35 do r.balls[i]={color=(i%6)+1,d=1100-i*25,kind='Bomb'} end
+r.balls[1].color=1;r.balls[2].color=1;r.balls[3].color=1
+local triggered=0;local sound=A.GameSound;A.GameSound=function(kind)if kind=='Bomb' then triggered=triggered+1 end end
+E.Match(r,2);A.GameSound=sound
+assert(#r.balls==0 and triggered==35 and r.score==3500,'each chained bomb resolves once')
+for _,kind in ipairs({'Frost','Rewind','Lightning','Paint','Stasis','Magnet','Treasure','Ward'}) do
+ r=fresh();r.balls={{color=1,d=400},{color=1,d=375,kind='Bomb'},{color=1,d=350},{color=2,d=325,kind=kind}}
+ E.Match(r,2);assert(r.specialImpact.kind==kind,'blast activates caught '..kind)
+end
+-- Precision rewards only consecutive matching shots; misses reset the sequence.
+r=fresh();for i=1,3 do E.RecordShot(r,true) end;assert(r.score==300 and r.precision==3)
+E.RecordShot(r,false);assert(r.precision==0)
+for i=1,12 do E.RecordShot(r,true) end;assert(r.score==300+300+600+900+900)
+E.Init(db);assert(r.precision==12 and r.streakNotice)
+""")
+for kind in ('Lightning','Paint','Stasis','Magnet','Treasure','Ward'):
+ for color in range(1,7):assert((ADDON/f'Media/{kind}{color}.tga').exists())
+print('PASS: six specials, rarity, targeting, delayed paint, lane-local timers, ward, wildcard union, bounded cascades and precision bonuses')
+
+visual=runtime()
+visual.execute("""
+A.events.OnEvent(A.events,'ADDON_LOADED','RaynnaRuneballs');A.events.OnEvent(A.events,'PLAYER_LOGIN');A.Open(false)
+local E=A.Engine
+for _,kind in ipairs({'Lightning','Paint','Stasis','Magnet','Treasure','Ward'}) do
+ local r=E.NewRun(A.db,30);r.paused=false;r.loadedKind=kind;r.loaded=3
+ r.balls={{color=3,kind=kind,d=400},{color=2,d=375},{color=3,d=350},{color=3,d=325}}
+ E.Special(r,1,kind);A.Draw()
+ local fx=A.Visuals.specialBursts[1]
+ assert(fx.core.texture==A.media..'Effect'..kind..'.tga' and fx.core:IsShown())
+ assert(A.Visuals.ammoLight:IsShown() and A.Visuals.ammoLight.tint[2]==A.colors[3][2])
+ if kind=='Lightning' then assert(fx.arcs[1]:IsShown()) end
+ A.db.options.reducedMotion=true;A.Draw()
+ for _,arc in ipairs(fx.arcs) do assert(not arc:IsShown()) end
+ for _,particle in ipairs(fx.particles) do assert(not particle:IsShown()) end
+ A.db.options.reducedMotion=false;A.Close()
+ for _,arc in ipairs(fx.arcs) do assert(not arc:IsShown()) end
+ assert(not fx.core:IsShown());A.Open(false)
+end
+""")
+print('PASS: new coloured sprites, distinct impact art, lightning links, reduced motion and pooled cleanup')
+
+new.execute("""
+local E=A.Engine;local db={};E.Init(db)
+local r=E.NewRun(db,1);r.remaining=0
+r.balls={{color=6,d=400},{color=6,d=375},{color=2,d=325},{color=2,d=300}}
+assert(E.Insert(r,3,1,350,'Rainbow')==1 and #r.balls==0 and r.score==500,'inserted wildcard clears white pair and blue pair')
+r=E.NewRun(db,30);r.paused=false;r.remaining=0;r.balls={{color=1,d=300}};local lane=r.other
+lane.remaining=0;lane.ward=12;local length=E.Path(1030).length;lane.balls={{color=1,d=length-.01},{color=2,d=length-25.01}}
+E.Step(db,.05);assert(r.status=='playing' and lane.status=='playing' and lane.reverse==2.5 and (r.reverse or 0)==0,'secondary ward saves only its own lane')
+-- Wire the precision counter through a real projectile hit and miss.
+r=E.NewRun(db,1);r.paused=false;r.remaining=0;r.precision=2;r.stasis=3;r.balls={{color=2,d=400},{color=2,d=375},{color=1,d=300}}
+local x,y=E.Point(1,400);r.shot={x=x,y=y,vx=1040,vy=0,color=2}
+E.Step(db,.01);assert(r.precision==3 and r.score==600 and r.streakNotice.points==300)
+r.shot={x=759,y=1,vx=1040,vy=0,color=1};E.Step(db,.01);assert(r.precision==0)
+""")
+print('PASS: wildcard insertion, secondary ward and projectile-driven precision rewards')

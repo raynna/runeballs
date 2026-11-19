@@ -265,7 +265,7 @@ function A.Draw()
                 or ''
             )
                 .. '+'
-                .. A.Number(burst.count * 100 * burst.combo)
+                .. A.Number(burst.points or burst.count * 100 * burst.combo)
         )
         board.combo:SetAlpha(math.max(0, 1 - burst.age / (burst.combo > 1 and 0.9 or 0.55)))
     end
@@ -276,6 +276,8 @@ function A.Draw()
         message = 'Round over'
     elseif r.paused then
         message = 'Paused'
+    elseif A.Engine.SpecialStatus(r) then
+        message = A.Engine.SpecialStatus(r)
     elseif (r.reverse or 0) > 0 then
         message = 'Rewinding'
     elseif (r.slow or 0) > 0 then
@@ -287,7 +289,7 @@ function A.Draw()
             or 'MATCH!  '
         )
             .. '+'
-            .. A.Number(burst.count * 100 * burst.combo)
+            .. A.Number(burst.points or burst.count * 100 * burst.combo)
     elseif danger then
         message = 'Portal danger'
     end
@@ -334,7 +336,9 @@ function A.Draw()
         frame.result.action:SetEnabled(not r.ending or r.ending.done)
     end
     frame.special:SetText(
-        r.loadedKind and (r.loadedKind .. ' - Match its colour to activate')
+        r.loadedKind
+                and (A.Specials.descriptions[r.loadedKind] or (r.loadedKind .. ' - Match its colour to activate'))
+            or ((r.precision or 0) > 0 and ('Precision streak: ' .. r.precision .. '\nBonus every 3 clean matches'))
             or 'Match 3 or more coloured balls!'
     )
     frame.play:SetIcon(r.status == 'playing' and not r.paused and 'PauseIcon' or 'PlayIcon')

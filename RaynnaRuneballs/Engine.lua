@@ -524,7 +524,18 @@ local function pick(run)
 end
 function E.RollSpecial()
     if math.random(100) <= 3 then
-        return ({ 'Bomb', 'Frost', 'Rewind', 'Rainbow' })[math.random(4)]
+        return ({
+            'Bomb',
+            'Frost',
+            'Rewind',
+            'Rainbow',
+            'Lightning',
+            'Paint',
+            'Stasis',
+            'Magnet',
+            'Treasure',
+            'Ward',
+        })[math.random(10)]
     end
 end
 local function newLane(db, level, score)
@@ -597,7 +608,8 @@ local function removeGroup(run, first, last, combo, kind)
     if run.balls[first] and first > 1 then
         run.balls[first].joinCombo = combo + 1
     end
-    run.score = run.score + count * 100 * combo
+    run.burst.points = count * 100 * combo * ((run.treasure or 0) > 0 and 2 or 1)
+    run.score = run.score + run.burst.points
     run.head = run.balls[1] and run.balls[1].d or 0
 end
 local triggerSpecial
@@ -608,16 +620,59 @@ local function bombTargets(run, index)
     end
     return targets
 end
+local reactionQueue
+local function captureSpecial(run, index, combo)
+    local ball = run.balls[index]
+    if not ball or not ball.kind then
+        return nil
+    end
+    return {
+        ball = ball,
+        d = ball.d,
+        kind = ball.kind,
+        color = ball.color,
+        combo = combo or 1,
+        targets = ball.kind == 'Bomb' and bombTargets(run, index) or nil,
+    }
+end
+local function resolveSpecials(run, specials)
+    local owner = not reactionQueue
+    if owner then
+        reactionQueue = { entries = {}, seen = {} }
+    end
+    local queue = reactionQueue
+    for _, special in ipairs(specials) do
+        if not queue.seen[special.ball] then
+            queue.seen[special.ball] = true
+            queue.entries[#queue.entries + 1] = special
+        end
+    end
+    if not owner then
+        return
+    end
+    local index = 1
+    while index <= #queue.entries do
+        local special = queue.entries[index]
+        triggerSpecial(run, special.d, special.kind, special.combo, special.targets, special.color)
+        index = index + 1
+    end
+    reactionQueue = nil
+end
+function E.ClearSpecialBall(run, index, combo)
+    local special = captureSpecial(run, index, combo)
+    removeGroup(run, index, index, combo, 'Spark')
+    if special then
+        resolveSpecials(run, { special })
+    end
+end
 function E.Match(run, index, combo)
-    local b = run.balls[index]
-    if not b then
+    local ball = run.balls[index]
+    if not ball then
         return 0
     end
-    local first, last, matchColor = index, index, b.color
-    -- Evaluate one colour at a time: a wildcard cannot join unrelated colours.
-    local candidates = b.kind == 'Rainbow' and { 1, 2, 3, 4, 5, 6 } or { b.color }
-    for _, color in ipairs(candidates) do
-        local left, right = index, index
+    local first, last = index, index
+    local function include(center, color)
+        local left, right = center, center
         while
             left > 1
             and touching(run.balls[left - 1], run.balls[left])
@@ -632,28 +687,43 @@ function E.Match(run, index, combo)
         do
             right = right + 1
         end
-        if right - left > last - first then
-            first, last, matchColor = left, right, color
+        if right - left + 1 >= 3 then
+            first, last = math.min(first, left), math.max(last, right)
         end
+    end
+    if ball.kind == 'Rainbow' then
+        for color = 1, 6 do
+            include(index, color)
+        end
+    else
+        include(index, ball.color)
     end
     if last - first + 1 < 3 then
         return 0
     end
+    -- A shared wildcard can complete valid groups on both sides. Expand through
+    -- every wildcard in the match, counting each physical ball only once.
+    local changed = true
+    while changed do
+        local oldFirst, oldLast = first, last
+        for i = first, last do
+            if run.balls[i].kind == 'Rainbow' then
+                for color = 1, 6 do
+                    include(i, color)
+                end
+            end
+        end
+        changed = first ~= oldFirst or last ~= oldLast
+    end
     local specials = {}
     for i = first, last do
-        if run.balls[i].kind then
-            specials[#specials + 1] = {
-                d = run.balls[i].d,
-                kind = run.balls[i].kind,
-                color = run.balls[i].kind == 'Rainbow' and matchColor or run.balls[i].color,
-                targets = run.balls[i].kind == 'Bomb' and bombTargets(run, i) or nil,
-            }
+        local special = captureSpecial(run, i, combo)
+        if special then
+            specials[#specials + 1] = special
         end
     end
     removeGroup(run, first, last, combo or 1)
-    for _, special in ipairs(specials) do
-        triggerSpecial(run, special.d, special.kind, combo or 1, special.targets, special.color)
-    end
+    resolveSpecials(run, specials)
     if A.GameSound then
         A.GameSound((combo or 1) > 1 and 'Combo' or 'Match', combo)
     end
@@ -713,28 +783,38 @@ triggerSpecial = function(run, d, kind, combo, targets, color)
                 last = i
             end
         end
-        -- Collateral clears do not activate unmatched special marbles.
         if first then
+            local caught = {}
+            for i = first, last do
+                local special = captureSpecial(run, i, combo)
+                if special then
+                    caught[#caught + 1] = special
+                end
+            end
             removeGroup(run, first, last, combo or 1, 'Explosion')
+            resolveSpecials(run, caught)
         end
     elseif kind == 'Frost' then
         run.slow = 4
     elseif kind == 'Rewind' then
         run.reverse = 2.5
+    elseif E.ApplyExtraSpecial then
+        E.ApplyExtraSpecial(run, d, kind, combo, color)
     end
 end
 -- Direct effect helper retained for isolated effect tests; shots always insert.
 function E.Special(run, index, kind)
-    local d = run.balls[index].d
-    local color = run.balls[index].color
-    if kind ~= 'Bomb' then
-        removeGroup(run, index, index, 1, kind == 'Frost' and 'Shatter' or 'Portal')
-    end
-    triggerSpecial(run, d, kind, 1, kind == 'Bomb' and bombTargets(run, index) or nil, color)
+    local ball = run.balls[index]
+    local targets = kind == 'Bomb' and bombTargets(run, index) or nil
+    removeGroup(run, index, index, 1, kind == 'Frost' and 'Shatter' or 'Portal')
+    resolveSpecials(
+        run,
+        { { ball = ball, d = ball.d, kind = kind, color = ball.color, combo = 1, targets = targets } }
+    )
 end
 local function advanceChain(run, dt)
     local balls = run.balls
-    if #balls == 0 then
+    if #balls == 0 or (run.stasis or 0) > 0 then
         return
     end
     local speed = E.Speed(run) * (run.slow > 0 and 0.28 or 1)
@@ -766,7 +846,10 @@ local function advanceChain(run, dt)
             local rear = balls[group.last + 1]
             local front = balls[group.last]
             local same = front.color == rear.color or front.kind == 'Rainbow' or rear.kind == 'Rainbow'
-            delta = same and -90 * dt or 0
+            delta = same and -90 * dt or ((run.magnet or 0) > 0 and -70 * dt or 0)
+            if g == 1 and delta < 0 and (run.magnet or 0) > 0 then
+                delta = math.max(delta, -math.max(0, balls[1].d - 38))
+            end
             local minimum = rear.d + spacing - front.d
             if delta <= minimum + 0.000001 then
                 delta = minimum
@@ -935,7 +1018,12 @@ local function advance(db, dt)
     E.Animate(r, dt)
     r.cooldown = math.max(0, r.cooldown - dt)
     r.slow = math.max(0, (r.slow or 0) - dt)
-    r.reverse = math.max(0, (r.reverse or 0) - dt)
+    if (r.stasis or 0) <= 0 then
+        r.reverse = math.max(0, (r.reverse or 0) - dt)
+    end
+    if E.StepExtraSpecials then
+        E.StepExtraSpecials(r, dt)
+    end
     advanceChain(r, dt)
     while r.remaining > 0 and (#r.balls == 0 or r.balls[#r.balls].d >= spacing) do
         local d = #r.balls == 0 and 0 or r.balls[#r.balls].d - spacing
@@ -960,6 +1048,9 @@ local function finish(db, r)
             r.campaignComplete = r.level == E.MAX_LEVEL
         end
     elseif #r.balls > 0 and r.head >= E.Path(E.Route(r)).length then
+        if E.TryWard and E.TryWard(r) then
+            return
+        end
         if A.GameSound then
             A.GameSound('Lose')
         end
@@ -1004,7 +1095,7 @@ local function shoot(r, dt)
             if A.GameSound then
                 A.GameSound('Hit')
             end
-            E.Insert(
+            local matched = E.Insert(
                 hitLane,
                 index,
                 shot.color,
@@ -1013,10 +1104,12 @@ local function shoot(r, dt)
                 shot.x,
                 shot.y
             )
+            E.RecordShot(r, matched > 0)
             r.shot = nil
         else
             shot.x, shot.y = shot.x + dx, shot.y + dy
             if shot.x < 0 or shot.x > 760 or shot.y < 0 or shot.y > 500 then
+                E.RecordShot(r, false)
                 r.shot = nil
             end
         end

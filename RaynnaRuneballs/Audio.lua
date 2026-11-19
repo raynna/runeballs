@@ -3,12 +3,18 @@ local lastPlayed = {}
 -- Blizzard FileDataIDs from wowdev's verified listfile (202611122246).
 -- Reference client assets directly; no extracted audio is bundled.
 local files = {
+    Lightning = 568678,
+    Paint = 569378,
+    Stasis = 569735,
+    Magnet = 569735,
+    Ward = 569735,
     Match = 568678, -- arcaneexplosion.ogg
     Bomb = 568528, -- smallexplosions_generic_01.ogg
     Frost = 569378, -- frostnova.ogg
     Rewind = 569735, -- teleport.ogg
 }
 local kits = {
+    Treasure = { 'UI_QUEST_AUTO_COMPLETE', 8430 },
     Hit = { 'IG_MAINMENU_OPTION_CHECKBOX_ON', 856 }, -- small native UI click
     Shoot = { 'IG_MAINMENU_OPTION_CHECKBOX_ON', 856 }, -- quiet native click
     Swap = { 'IG_MAINMENU_OPTION_CHECKBOX_ON', 3175 },

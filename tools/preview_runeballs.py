@@ -59,7 +59,7 @@ def preview(faction,scene):
    distance=distances[index] if distances else 14+index*25
    if secondary and any(abs(distance-c['under'])<=c['half'] for c in scene['crossings']):continue
    if index in scene.get('otherRemoved' if secondary else 'removed',[]):continue
-   color=rng.randrange(1,scene['colors']+1)
+   color=scene.get('otherBallColors' if secondary else 'ballColors',{}).get(index,rng.randrange(1,scene['colors']+1))
    kind=None
    if index in kinds:kind,color=kinds[index]
    name=('Rainbow' if kind=='Rainbow' else kind+str(color)) if kind else 'Ball'+str(color)
@@ -84,6 +84,7 @@ def preview(faction,scene):
   ex,ey=route[-1];px,py=route[-2];angle=-math.degrees(math.atan2((ey-py)*.86,ex-px))
   sprite('Portal',132+ex,155+ey*.86,60,60,angle)
   sprite('PortalSwirl',132+ex,155+ey*.86,28,28)
+  if scene.get('ward') and route is scene['path']:tinted('EffectWard',132+ex,155+ey*.86,46,46,colors[scene.get('loadedColor',6)-1],.65)
  for args in auras:aura(*args)
  sprite(faction+'Launcher',512,365,104,104)
  loaded=scene.get('loadedColor',2);kind=scene.get('loadedKind')
@@ -94,14 +95,26 @@ def preview(faction,scene):
   x,y=impact['point'];x+=132;y=155+y*.86
   progress=impact.get('progress',.35);kind=impact['kind'];tint=colors[impact['color']-1]
   rewind=kind=='Rewind';size=85-progress*45 if rewind else 40+progress*100
-  tinted('PortalSwirl' if rewind else 'SpecialRing',x,y,size,size,tint,(1-progress)*.95,angle=math.degrees(-progress*5) if rewind else 0)
+  extra=kind in ('Lightning','Paint','Stasis','Magnet','Treasure','Ward')
+  tinted('Effect'+kind if extra else 'PortalSwirl' if rewind else 'SpecialRing',x,y,size,size,tint,(1-progress)*.95,angle=math.degrees(-progress*5) if rewind or kind=='Magnet' else 0)
+  if kind=='Lightning':
+   previous=(x,y)
+   for tx,ty in impact.get('links',[]):
+    target=(132+tx,155+ty*.86);dx,dy=target[0]-previous[0],target[1]-previous[1]
+    tinted('LightningArc',(target[0]+previous[0])/2,(target[1]+previous[1])/2,max(1,math.hypot(dx,dy)),12,tint,(1-progress)*.85,angle=-math.degrees(math.atan2(dy,dx)))
+    previous=target
   for i in range(1,13):
    angle=i*math.pi/6+(-progress*4 if rewind else 0)
    radius=65*(1-progress) if rewind else 10+progress*(70 if i%2==0 else 45)
    px=x+math.cos(angle)*radius;py=y+math.sin(angle)*radius*.86
    if kind=='Bomb' and 'particles' in impact:
     px,py=impact['particles'][i-1];px+=132;py=155+py*.86
-   tinted('SpecialSpark',px,py,(22 if kind=='Frost' else 18)*(1-progress*.6),18*(1-progress*.6),tint,(1-progress)*.9,angle=math.degrees(angle+progress*(-4 if rewind else 2)))
+   if kind=='Paint' and i<=len(impact.get('links',[])):
+    tx,ty=impact['links'][i-1];px=x+(132+tx-x)*min(1,progress*2.5);py=y+(155+ty*.86-y)*min(1,progress*2.5)
+   elif kind=='Treasure':px=x+math.cos(angle)*35;py=y+(-progress*90+i%3*12)*.86
+   elif kind=='Magnet':px=x+math.cos(angle)*70*(1-progress);py=y+math.sin(angle)*70*(1-progress)*.86
+   elif kind=='Stasis':px=x+math.cos(angle)*45;py=y+math.sin(angle)*45*.86
+   tinted('Effect'+kind if extra else 'SpecialSpark',px,py,(22 if kind=='Frost' else 18)*(1-progress*.6),18*(1-progress*.6),tint,(1-progress)*.9,angle=math.degrees(angle+progress*(-4 if rewind else 2)))
  if scene.get('combo'):
   cx,cy=scene['combo']['point']
   text('COMBO! x'+str(scene['combo']['count']),132+cx,155+cy*.86-46,24,True)
@@ -114,7 +127,7 @@ def preview(faction,scene):
  panel(132,590,760,27);text('PORTAL THREAT',207,596,14)
  d.rectangle((292,598,877,609),fill=(13,8,15));d.rectangle((292,598,540,609),fill=(39,191,255))
  panel(35,625,290,83);sprite('QuestGem',66,666,38,48)
- text('SEAL THE PORTAL!',203,641,18,False,213);text('Match 3+ to clear the chain',203,670,14,False,213)
+ text(scene.get('status','SEAL THE PORTAL!'),203,641,18,False,213);text(scene.get('hint','Match 3+ to clear the chain'),203,670,14,False,213)
  panel(335,625,110,83);sprite('Marbles',355,647,16,16);text('MARBLES',400,641,11);text(str(scene.get('remaining',74)),390,665,28,True)
  panel(455,625,220,83)
  for i,(icon,label) in enumerate([('MouseLeft','Left-click: shoot'),('MouseRight','Right-click: swap'),('EscapeKey','Esc: pause')]):

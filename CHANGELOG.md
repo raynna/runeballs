@@ -1,3 +1,22 @@
+# 0.5.26
+
+Six new specials, precision streaks and chain-reaction fixes.
+
+- Lightning: zaps up to five exposed same-colour balls.
+- Paint: recolours up to four nearby ordinary balls and resolves new matches after a visible delay.
+- Stasis: freezes lane movement for 3 seconds while shooting stays available.
+- Magnet: pulls separated groups together for 4 seconds.
+- Treasure: doubles that lane's match points for 8 seconds.
+- Ward: protects that lane for 12 seconds, consuming itself to rewind after one portal breach.
+- Ten types share the same 3% total random special chance, equally: 0.3% per type overall. All six new types have six colour variants, colour-matched glow, distinct activation effects and HUD help/timers.
+- Precision streak: every third consecutive direct matching shot awards +300, then +600, then +900 (capped). A miss or non-matching shot resets the streak.
+- Rainbow between two whites and two blues now clears both groups, counting the wildcard once. Gaps and under-sized groups still do not qualify.
+- Bomb and lightning clears trigger caught specials through a bounded reaction queue; a ball activates only once per reaction.
+
+Lua 5.1 gameplay, rarity, matching, cascades, tunnel protection, timers, saved state, both lanes, UI effects and flight-game tests passed; StyLua passed. Both faction renders and the six individual new-special previews reviewed. These PNGs are labelled staged previews, not live WoW screenshots.
+
+Install the player ZIP and /reload. If the client caches missing new textures, restart WoW. Player saves are preserved. Close-after-flight remains off by default.
+
 # 0.5.25
 
 Close game when flight is done now defaults to OFF.

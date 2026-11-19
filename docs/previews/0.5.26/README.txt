@@ -1,0 +1,1 @@
+Six individual staged preview PNGs, one for each new special: Lightning, Paint, Stasis, Magnet, Treasure and Ward. Both faction themes are represented. Rendered from shipped sprites and exact route geometry; not live WoW screenshots. Regenerate with tools/build_runeballs_gallery.py after exporting routes.

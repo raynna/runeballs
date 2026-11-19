@@ -1,6 +1,6 @@
 # Raynna's Runeballs
 
-A standalone coloured-marble shooter for WoW Forever (Interface 16001), version 0.5.25.
+A standalone coloured-marble shooter for WoW Forever (Interface 16001), version 0.5.26.
 Aim an arcane launcher into a winding chain and match three or more marbles
 before its leading ball reaches the void portal. Joining matching groups creates
 chain reactions and score multipliers. The 100-round campaign alternates twelve
@@ -20,7 +20,7 @@ while retaining your personal best.
 
 Alliance and Horde characters automatically receive different illustrated frames,
 launcher bases and buttons. Marbles, controls and effects use simple cartoon
-sprites with thick outlines. Ordinary balls are plain colours; only special shots
+sprites with thick outlines. Ordinary balls are plain colours; only special balls
 carry ability icons.
 
 ## Chain movement and specials
@@ -31,17 +31,31 @@ colours across a gap pull the front section backwards; a chain combo scores only
 when the sections actually touch. Combo multipliers reward successive joins.
 
 Each fired shot has an independent 3% chance to award special next-ammo.
-The type is chosen randomly with equal chances:
+Ten types share that chance equally (0.3% per type overall):
 
 - **Bomb:** clears up to three neighbouring balls ahead and three behind its position, plus the matching group.
 - **Frost:** slows the chain for four seconds.
 - **Rewind:** reverses the chain for up to 2.5 seconds.
-- **Rainbow:** wildcard that completes a group of three or more of any one colour; it cannot combine unrelated colours. If both sides offer a match, the larger group wins.
+- **Rainbow:** completes every valid colour group touching it. Two whites + Rainbow + two blues clears all five; one white + Rainbow + one blue does not qualify.
+- **Lightning:** zaps up to five exposed same-colour balls, nearest first.
+- **Paint:** recolours up to four nearby ordinary balls within 180 path units; new touching matches resolve after 0.45 seconds as chain combos.
+- **Stasis:** stops lane movement for three seconds; shooting remains available.
+- **Magnet:** pulls separated groups together for four seconds, including unlike colours.
+- **Treasure:** doubles subsequent match/clear points on that lane for eight seconds.
+- **Ward:** protects that lane for twelve seconds; one portal breach consumes it and starts a 2.5-second rewind.
 
-Specials retain one of the six normal colours and activate only in a touching
+Coloured specials retain one of the six normal colours and activate in a touching
 match of at least three same-colour balls (special plus two others). Incoming
 chain balls also have an independent 3% chance of a random special. Unmatched
-special shots stay in the chain; blast collateral does not trigger their abilities.
+special shots stay in the chain. Bomb blasts and lightning also activate caught
+specials; each physical ball can activate only once per reaction. Lane effects
+do not spill into the other lane. Timers pause with the game and survive reloads.
+Every third consecutive shot that directly makes a match earns a precision bonus:
++300 at three, +600 at six, then +900 at nine and every third match beyond it.
+A miss or non-matching insertion resets the streak, without removing earned points.
+Delayed Paint/gap combos still score normally but do not count as direct shots.
+The HUD shows loaded-special help, active timers and precision rewards.
+
 Specials can be swapped just like normal balls. Explosions, shards, spark bursts,
 portal rotation and danger pulses animate during play. Sounds reference native
 WoW spell and UI assets, respect the game's SFX volume, and can be disabled in
@@ -196,8 +210,8 @@ Losing ends the run; New Game restarts round one. Share Result previews your
 round and score, with selectable chat destinations and a separate Send button.
 Matching sections retract more slowly so chain combos are easier to follow.
 
-Rainbow shares the existing 3% total special rate equally with the other three
-abilities (0.75% per type overall). Its light cycles through the six colours,
+Rainbow shares the existing 3% total special rate equally with the other nine
+abilities (0.3% per type overall). Its light cycles through the six colours,
 with a steady pearl glow under reduced motion.
 
 Version 0.5.24 replaces the repeated single-path spiral formula with twelve route
@@ -209,3 +223,8 @@ marbles and preferences, pause on reload and discard transient effects/projectil
 from the old geometry. The release includes six individual, labelled offline
 preview PNGs showing both factions, different rounds and special effects; these
 are staged previews, not live WoW screenshots.
+
+Version 0.5.26 adds six coloured specials, a precision-shot streak mechanic and
+36 new ball sprites with six distinct activation glyphs and lightning arcs.
+Rainbow now clears valid groups on both sides, and powered clears chain into
+caught specials. Regenerate the new sprites with tools/build_runeballs_specials.py.

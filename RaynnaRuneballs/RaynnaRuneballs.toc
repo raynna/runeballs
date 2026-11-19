@@ -2,11 +2,12 @@
 ## Title: Raynna's Runeballs
 ## Notes: Match coloured runeballs before the chain reaches the void. Play anywhere or on flights.
 ## Author: Andreas
-## Version: 0.5.25
+## Version: 0.5.26
 ## SavedVariablesPerCharacter: RaynnaRuneballsDB
 SettingsRegistry.lua
 GameRegistry.lua
 Engine.lua
+Specials.lua
 Theme.lua
 Audio.lua
 Visuals.lua
