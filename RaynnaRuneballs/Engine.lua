@@ -427,6 +427,9 @@ function E.Point(level, distance)
     local f = (distance - a.d) / (b.d - a.d)
     return a.x + (b.x - a.x) * f, a.y + (b.y - a.y) * f
 end
+-- Transient peer lookup keeps cross-lane blasts out of saved-variable graphs.
+local peerLanes = setmetatable({}, { __mode = 'kv' })
+E.BOMB_RADIUS = 120
 function E.Init(db)
     db.options = db.options or {}
     db.appearance = db.appearance or {}
@@ -482,6 +485,7 @@ function E.Init(db)
         r.layoutVersion = 3
         if r.other then
             E.Init({ run = r.other })
+            peerLanes[r], peerLanes[r.other] = r.other, r
         end
         r.colorCount = 6
         r.effects = r.effects or {}
@@ -578,6 +582,7 @@ function E.NewRun(db, level, score)
         r.remaining = math.floor(total / 2) - #r.balls
         other.remaining = total - math.floor(total / 2) - #other.balls
         r.other = other
+        peerLanes[r], peerLanes[other] = other, r
     end
     return r
 end
@@ -622,8 +627,21 @@ end
 local triggerSpecial
 local function bombTargets(run, index)
     local targets = {}
-    for i = math.max(1, index - 3), math.min(#run.balls, index + 3) do
-        targets[run.balls[i]] = true
+    local x, y = E.Point(E.Route(run), run.balls[index].d)
+    local peer = run.other or peerLanes[run]
+    for _, lane in ipairs(peer and { run, peer } or { run }) do
+        local hit = { lane = lane, balls = {} }
+        for _, ball in ipairs(lane.balls) do
+            local bx, by = E.Point(E.Route(lane), ball.d)
+            if
+                ball.d >= 24
+                and not E.Hidden(lane, ball.d)
+                and (bx - x) ^ 2 + ((by - y) * 0.86) ^ 2 <= E.BOMB_RADIUS ^ 2
+            then
+                hit.balls[ball] = true
+            end
+        end
+        targets[#targets + 1] = hit
     end
     return targets
 end
@@ -650,6 +668,7 @@ local function resolveSpecials(run, specials)
     local queue = reactionQueue
     for _, special in ipairs(specials) do
         if not queue.seen[special.ball] then
+            special.lane = run
             queue.seen[special.ball] = true
             queue.entries[#queue.entries + 1] = special
         end
@@ -660,7 +679,7 @@ local function resolveSpecials(run, specials)
     local index = 1
     while index <= #queue.entries do
         local special = queue.entries[index]
-        triggerSpecial(run, special.d, special.kind, special.combo, special.targets, special.color)
+        triggerSpecial(special.lane, special.d, special.kind, special.combo, special.targets, special.color)
         index = index + 1
     end
     reactionQueue = nil
@@ -783,23 +802,32 @@ triggerSpecial = function(run, d, kind, combo, targets, color)
         A.GameSound(kind)
     end
     if kind == 'Bomb' then
-        local first, last
-        for i, ball in ipairs(run.balls) do
-            if targets and targets[ball] then
-                first = first or i
-                last = i
-            end
-        end
-        if first then
-            local caught = {}
-            for i = first, last do
-                local special = captureSpecial(run, i, combo)
-                if special then
-                    caught[#caught + 1] = special
+        run.specialImpact.radius = E.BOMB_RADIUS
+        run.bombImpact = run.specialImpact
+        -- Capture all caught specials before removing any balls. Curved roads
+        -- can yield separate hit groups; never clear intervening out-of-radius balls.
+        for _, hit in ipairs(targets or {}) do
+            local lane, caught = hit.lane, {}
+            for i, ball in ipairs(lane.balls) do
+                if hit.balls[ball] then
+                    local special = captureSpecial(lane, i, combo)
+                    if special then
+                        caught[#caught + 1] = special
+                    end
                 end
             end
-            removeGroup(run, first, last, combo or 1, 'Explosion')
-            resolveSpecials(run, caught)
+            local i = #lane.balls
+            while i > 0 do
+                if hit.balls[lane.balls[i]] then
+                    local last = i
+                    while i > 1 and hit.balls[lane.balls[i - 1]] do
+                        i = i - 1
+                    end
+                    removeGroup(lane, i, last, combo or 1, 'Explosion')
+                end
+                i = i - 1
+            end
+            resolveSpecials(lane, caught)
         end
     elseif kind == 'Frost' then
         run.slow = 4
@@ -925,13 +953,19 @@ function E.Animate(r, dt)
     if r.lightningImpact and r.lightningImpact ~= r.specialImpact then
         r.lightningImpact.age = r.lightningImpact.age + dt
     end
+    if r.bombImpact and r.bombImpact ~= r.specialImpact then
+        r.bombImpact.age = r.bombImpact.age + dt
+    end
     if r.specialImpact then
         r.specialImpact.age = r.specialImpact.age + dt
-        if r.specialImpact.age >= 1.1 then
+        if r.specialImpact.age >= (r.specialImpact.kind == 'Lightning' and 1.55 or 1.1) then
             r.specialImpact = nil
         end
     end
-    if r.lightningImpact and r.lightningImpact.age >= 1.1 then
+    if r.bombImpact and r.bombImpact.age >= 1.1 then
+        r.bombImpact = nil
+    end
+    if r.lightningImpact and r.lightningImpact.age >= 1.55 then
         r.lightningImpact = nil
     end
     for i = #r.effects, 1, -1 do

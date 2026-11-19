@@ -76,8 +76,10 @@ r.shot={x=759,y=1,vx=1040,vy=0,color=2}
 E.Step(db,0.05);assert(not r.shot)
 r=E.NewRun(db,1);r.paused=false;r.remaining=0
 local before=#r.balls
-E.Special(r,7,'Bomb');assert(#r.balls==before-7 and r.burst.kind=='Explosion')
-E.Special(r,math.min(7,#r.balls),'Frost');assert(r.slow==4)
+local expected=0;local bx,by=E.Point(1,r.balls[7].d)
+for _,ball in ipairs(r.balls) do local x,y=E.Point(1,ball.d);if ball.d>=24 and not E.Hidden(r,ball.d) and (x-bx)^2+((y-by)*.86)^2<=E.BOMB_RADIUS^2 then expected=expected+1 end end
+E.Special(r,7,'Bomb');assert(#r.balls==before-expected and r.burst.kind=='Explosion')
+r=E.NewRun(db,1);r.paused=false;r.remaining=0;E.Special(r,math.min(7,#r.balls),'Frost');assert(r.slow==4)
 local tail=r.balls[#r.balls].d
 E.Step(db,0.05);assert(r.balls[#r.balls].d-tail<1,'frost slows rear driver')
 E.Special(r,#r.balls,'Rewind');assert(r.reverse==2.5)
@@ -686,8 +688,9 @@ end
 local r=E.NewRun(db,1);r.remaining=0;r.balls={}
 for i=1,11 do r.balls[i]={color=i%2+2,d=600-i*25} end
 r.balls[5].color=1;r.balls[6].color=1;r.balls[7].color=1;r.balls[6].kind='Bomb';r.balls[4].kind='Frost'
-assert(E.Match(r,6)==1 and #r.balls==4 and r.score==700)
-assert(r.balls[1].d==575 and r.balls[2].d==550 and r.balls[3].d==350 and r.balls[4].d==325,'bomb clears three original neighbours per side')
+local expected=0;local bx,by=E.Point(1,r.balls[6].d)
+for _,ball in ipairs(r.balls) do local x,y=E.Point(1,ball.d);if (x-bx)^2+((y-by)*.86)^2<=E.BOMB_RADIUS^2 then expected=expected+1 end end
+assert(E.Match(r,6)==1 and #r.balls==11-expected and r.score==expected*100)
 assert(r.slow==4,'bomb blast activates a caught Frost ball')
 r=E.NewRun(db,1);r.remaining=0;r.paused=false;r.balls={{color=2,d=350}}
 local x,y=E.Point(1,350);r.shot={x=x-35,y=y,vx=1040,vy=0,color=1,kind='Rewind'}
@@ -742,7 +745,7 @@ for color=1,6 do
   for channel=1,3 do assert(tint[channel]==A.colors[color][channel],'aura uses matching marble colour') end
   E.Special(r,1,kind);assert(r.specialImpact.color==color)
   A.Draw();tint=A.Visuals.specialBursts[1].core.tint
-  if kind=='Bomb' then assert(tint[1]==1 and tint[3]==.04,'detonation is fire while idle aura retains ball colour')
+  if kind=='Bomb' then assert(tint[1]==1 and tint[3]==1,'detonation is fire while idle aura retains ball colour')
   else for channel=1,3 do assert(tint[channel]==A.colors[color][channel]) end end
  end
 end
@@ -973,13 +976,13 @@ local fx=A.Visuals.specialBursts[1]
 assert(fx.arcs[1]:IsShown() and not fx.arcs[2]:IsShown(),'lightning begins with one hop')
 assert(fx.arcBlooms[1].blendMode=='ADD' and fx.arcCores[1].blendMode=='ADD')
 assert(fx.arcBlooms[1].parent==A.board.effectLayer and fx.hitLights[1].parent==A.board.effectLayer)
-E.Animate(r,.16);A.Draw()
-assert(math.abs(impact.age-.16)<.000001,'shared visual record advances once')
+E.Animate(r,.38);A.Draw()
+assert(math.abs(impact.age-.38)<.000001,'shared visual record advances once')
 assert(fx.arcs[3]:IsShown() and not fx.arcs[4]:IsShown(),'hops reveal in sequence')
 assert(fx.hitLights[1].alpha>0 and fx.hitFlashes[1].alpha>0,'arrival illuminates the hit point')
 assert(fx.arcBlooms[1].tint[2]==A.colors[2][2] and fx.arcCores[1].tint[1]>A.colors[2][1],'colour bloom and bright core stay separate')
 local count=#Frames;A.Draw();assert(#Frames==count,'effect pools are reused')
-r.specialImpact={kind='Bomb',color=1,x=200,y=100,age=0};E.Animate(r,.2);A.Draw()
+r.specialImpact={kind='Bomb',color=1,x=200,y=100,age=0};E.Animate(r,.4);A.Draw()
 assert(fx.arcs[5]:IsShown() and r.lightningImpact==impact,'later special does not erase chain lightning')
 local age=impact.age;r.paused=true;E.Step(A.db,.05);assert(impact.age==age,'pause freezes lightning')
 E.Init(A.db);assert(r.paused and r.lightningImpact==impact and impact.age==age,'reload preserves and pauses the lightning record')
@@ -1031,15 +1034,15 @@ local E=A.Engine; local r=A.db.run
 r.balls={{d=250,color=2},{d=225,color=2},{d=200,color=2}}
 assert(E.Match(r,2,3));A.Draw()
 local fx=A.Feedback.clears[1]
-assert(fx[1]:IsShown() and fx[1].blendMode=='ADD')
-assert(fx[1].tint[2]==A.colors[2][2] and r.effects[1].combo==3)
+assert(fx[1]:IsShown() and fx[1].blendMode=='BLEND')
+assert(fx[1].texture==A.media..'Break2_1.tga' and r.effects[1].combo==3)
 A.db.options.reducedMotion=true;A.Draw();assert(not fx[3]:IsShown())
 r.balls={{d=250,color=2}};r.reverse=2;r.slow=3;r.stasis=2;r.magnet=4;r.treasure=4
 A.Draw();local cue=A.Feedback.statuses[1]
-for i=1,6 do assert(cue[i]:IsShown()) end
+for i=1,5 do assert(cue[i]:IsShown()) end
 r.ward=12;A.Draw();assert(A.Visuals.holes[1].ward.texture==A.media..'PortalShield.tga')
 r.reverse=0;r.slow=0;r.stasis=0;r.magnet=0;r.treasure=0;A.Draw()
-for i=1,6 do assert(not cue[i]:IsShown()) end
+for i=1,5 do assert(not cue[i]:IsShown()) end
 r.specialImpact={};E.ApplyExtraSpecial(r,250,'Magnet',1,2);assert(r.magnet==6)
 A.Close();assert(not fx[1]:IsShown())
 """)
@@ -1068,7 +1071,7 @@ A.Draw();local shell=A.Feedback.statuses[1][2]
 assert(shell.texture==A.media..'IceShell6.tga' and shell.blendMode=='BLEND')
 r.slow=2;A.Draw();assert(shell.texture==A.media..'IceShell3.tga')
 r.slow=.2;A.Draw();assert(shell.texture==A.media..'IceShell1.tga' and shell.alpha<.6)
-r.slow=0;r.stasis=3;A.Draw();assert(shell.texture==A.media..'TimeChains.tga' and shell.alpha==1)
+r.slow=0;r.stasis=3;A.Draw();assert(not shell:IsShown());shell=A.Feedback.chains[1][1];assert(shell.texture==A.media..'TimeChainLink.tga' and shell.alpha==1)
 r.stasis=.2;A.Draw();assert(shell.alpha<.5)
 A.db.options.reducedMotion=true;A.Draw();assert(shell:IsShown(),'reduced motion retains physical state')
 r.stasis=0;A.Draw();assert(not shell:IsShown(),'material vanishes at expiry')
@@ -1076,3 +1079,61 @@ r.stasis=0;A.Draw();assert(not shell:IsShown(),'material vanishes at expiry')
 for name in ['IceShell'+str(i) for i in range(1,7)]+['TimeChains','RewindWrap','MagnetWrap','TreasureWrap','FireBlast','FireBlastGlow','FireTongue']:
  assert (ADDON/'Media'/f'{name}.tga').exists()
 print('PASS: six ice melt stages, chain release, expiry, firelight and reduced-motion materials')
+
+
+lua=runtime()
+lua.execute("""
+A.events.OnEvent(A.events,'ADDON_LOADED','RaynnaRuneballs');A.events.OnEvent(A.events,'PLAYER_LOGIN');A.Open(false)
+local r=A.db.run;r.balls={{d=600,color=1},{d=200,color=2}};r.stasis=3
+A.Draw();local n=0;for _,item in ipairs(A.Feedback.chains) do if item[1]:IsShown() then n=n+1 end end
+assert(n>30,'continuous restraint spans the whole train, including gaps')
+local hidden=A.Engine.Hidden;A.Engine.Hidden=function() return true end;A.Draw()
+for _,item in ipairs(A.Feedback.chains) do assert(not item[1]:IsShown(),'no chain through tunnel cover') end
+A.Engine.Hidden=hidden;A.Draw();A.Close()
+for _,item in ipairs(A.Feedback.chains) do assert(not item[1]:IsShown()) end
+""")
+print('PASS: continuous route-following restraint, gap span, tunnel occlusion and close cleanup')
+
+
+lua=runtime()
+lua.execute("""
+local E=A.Engine;local db={};E.Init(db);local r=E.NewRun(db,30);local other=r.other
+r.balls={{d=400,color=1},{d=300,color=2},{d=200,color=3},{d=100,color=4}}
+other.balls={{d=500,color=2,kind='Frost'},{d=450,color=1}}
+local oldPoint,oldHidden=E.Point,E.Hidden
+E.Point=function(route,d)
+ if route==1030 then if d==500 then return 180,100 else return 100,90 end end
+ if d==400 then return 100,100 elseif d==300 then return 350,100 elseif d==200 then return 100,190 else return 100,300 end
+end
+E.Hidden=function(lane,d)return lane==other and d==450 end
+E.Special(r,1,'Bomb')
+assert(#r.balls==2 and r.balls[1].d==300 and r.balls[2].d==100,'blast clears near bend but preserves far intervening balls')
+assert(#other.balls==1 and other.balls[1].d==450,'other lane is hit but tunnel ball is protected')
+assert(other.slow==4 and (r.slow or 0)==0,'caught special applies to its own lane')
+-- Rebind the transient peer map on saved-state initialization; secondary blasts reach primary.
+E.Init(db);r.balls={{d=200,color=1,kind='Frost'},{d=300,color=2}};other.balls={{d=500,color=1,kind='Bomb'}}
+E.Special(other,1,'Bomb');assert(r.slow==4 and #r.balls==1 and r.balls[1].d==300)
+E.Point,E.Hidden=oldPoint,oldHidden
+""")
+print('PASS: radial cross-lane bomb, noncontiguous targets, tunnel protection, lane-local cascades and reload peer binding')
+
+
+lua=runtime()
+lua.execute("""
+A.events.OnEvent(A.events,'ADDON_LOADED','RaynnaRuneballs');A.events.OnEvent(A.events,'PLAYER_LOGIN');A.Open(false)
+local r=A.db.run;local E=A.Engine;r.balls={{d=350,color=1},{d=325,color=1},{d=300,color=1}}
+E.Match(r,2);A.Draw();local t=A.Feedback.clears[1][1]
+assert(t.texture==A.media..'Break1_1.tga')
+E.Animate(r,.13);A.Draw();assert(t.texture==A.media..'Break1_2.tga')
+E.Animate(r,.13);A.Draw();assert(t.texture==A.media..'Break1_3.tga')
+E.Animate(r,.13);A.Draw();assert(t.texture==A.media..'Break1_4.tga')
+A.db.options.reducedMotion=true;A.Draw();assert(t.texture==A.media..'Break1_2.tga')
+r.specialImpact={kind='Bomb',color=1,x=200,y=100,age=0,radius=120};r.bombImpact=r.specialImpact
+E.Animate(r,.1);assert(math.abs(r.bombImpact.age-.1)<.001,'shared bomb record ages once')
+r.specialImpact={kind='Frost',color=2,x=200,y=100,age=0};A.Draw()
+assert(A.Visuals.specialBursts[3].core:IsShown(),'explosion survives caught Frost activation')
+E.Animate(r,1.1);A.Draw();assert(not r.bombImpact and not A.Visuals.specialBursts[3].core:IsShown())
+""")
+for colour in range(1,7):
+ for frame in range(1,5):assert (ADDON/'Media'/f'Break{colour}_{frame}.tga').exists()
+print('PASS: all 24 breaking frames, reduced motion, bomb cascade visibility and shared-record expiry')

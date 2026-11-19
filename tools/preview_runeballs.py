@@ -101,26 +101,26 @@ def preview(faction,scene):
   extra=kind in impact_textures
   tinted('ImpactLight',x,y,95,95,tint,(1-progress)**2*.35,True)
   if kind=='Lightning':size=26+progress*16
-  if kind=='Bomb':size=35+math.sin(min(1,progress*1.4)*math.pi*.5)*100
-  tinted(impact_textures.get(kind,'PortalSwirl' if rewind else 'SpecialRing'),x,y,size,size,tint,(1-progress)*.95,extra,angle=math.degrees(-progress*5) if rewind or kind=='Magnet' else 0)
+  if kind=='Bomb':size=35+math.sin(min(1,progress*2.5)*math.pi*.5)*(240-35)
+  tinted(impact_textures.get(kind,'PortalSwirl' if rewind else 'SpecialRing'),x,y,size,size,(1,1,1) if kind=='Bomb' else tint,(1-progress)*.95,extra and kind!='Bomb',angle=math.degrees(-progress*5) if rewind or kind=='Magnet' else 0)
   if kind!='Lightning':
    rotation=math.degrees(-progress*5) if rewind or kind=='Magnet' else 0
    tinted(impact_textures[kind]+'Glow',x,y,size,size,tint,(1-progress)*.7,True,angle=rotation)
-   if kind=='Bomb':tinted('FireBlast',x,y,size*.58,size*.58,(1,.85,.3),(1-progress)**2*.95,True)
+   if kind=='Bomb':tinted('ImpactLight',x,y,size*.58,size*.58,(1,.85,.3),(1-progress)**2*.95,True)
    elif kind!='Paint':tinted(impact_textures[kind],x,y,size,size,tuple(.65+v*.35 for v in tint),(1-progress)*.35,True,angle=rotation)
   if kind=='Lightning':
    age=progress*1.1
    tinted('ImpactLight',x,y,80,80,tint,max(0,1-age/.3)*.7,True)
    previous=(x,y)
    for index,(tx,ty) in enumerate(impact.get('links',[])):
-    target=(132+tx,155+ty*.86);local_age=age-index*.075
+    target=(132+tx,155+ty*.86);local_age=age-index*.18
     if 0<=local_age<.72:
-     travel=min(1,local_age/.045);end=(previous[0]+(target[0]-previous[0])*travel,previous[1]+(target[1]-previous[1])*travel)
+     travel=min(1,local_age/.10);end=(previous[0]+(target[0]-previous[0])*travel,previous[1]+(target[1]-previous[1])*travel)
      dx,dy=end[0]-previous[0],end[1]-previous[1];alpha=1-local_age/.72;variant=int(local_age*13)%3+1
      center=((end[0]+previous[0])/2,(end[1]+previous[1])/2)
      for texture,color,opacity in [('LightningBloom',tint,.85),('LightningBolt',tint,.9),('LightningBolt',tuple(.75+v*.25 for v in tint),.75)]:
       tinted(texture+str(variant),*center,max(1,math.hypot(dx,dy)),32,color,alpha*opacity,True,angle=-math.degrees(math.atan2(dy,dx)))
-     arrival=max(0,min(1,(local_age-.035)/.055))*alpha
+     arrival=max(0,min(1,(local_age-.09)/.08))*alpha
      tinted('ImpactLight',*target,45+arrival*22,45+arrival*22,tint,arrival*.65,True)
      tinted('LightningFlash',*target,13+arrival*10,13+arrival*10,tuple(.7+v*.3 for v in tint),arrival,True)
     previous=target
@@ -129,8 +129,8 @@ def preview(faction,scene):
     angle=i*math.pi/6+(-progress*4 if rewind else 0)
     radius=65*(1-progress) if rewind else 10+progress*(70 if i%2==0 else 45)
     px=x+math.cos(angle)*radius;py=y+math.sin(angle)*radius*.86
-    if kind=='Bomb' and 'particles' in impact:
-     px,py=impact['particles'][i-1];px+=132;py=155+py*.86
+    if kind=='Bomb':
+     radius=120*min(1,progress*2.5);px=x+math.cos(angle)*radius;py=y+math.sin(angle)*radius
     if kind=='Paint' and i<=len(impact.get('links',[])):
      tx,ty=impact['links'][i-1];px=x+(132+tx-x)*min(1,progress*2.5);py=y+(155+ty*.86-y)*min(1,progress*2.5)
     elif kind=='Treasure':px=x+math.cos(angle)*35;py=y+(-progress*90+i%3*12)*.86
@@ -139,26 +139,38 @@ def preview(faction,scene):
     particle_tint=colors[(i-1)%6] if kind=='Rainbow' else tint
     if kind=='Bomb':py-=progress*25*.86
     tinted('ImpactLight',px,py,28,28,particle_tint,(1-progress)*.4,True)
-    tinted(particles.get(kind,'SpecialSpark'),px,py,(22 if kind=='Frost' else 24 if kind=='Bomb' else 18)*(1-progress*.6),(38 if kind=='Bomb' else 18)*(1-progress*.6),particle_tint,(1-progress)*.9,kind!='Paint',angle=math.degrees(angle+progress*(-4 if rewind else 2)))
+    tinted(particles.get(kind,'SpecialSpark'),px,py,(22 if kind=='Frost' else 24 if kind=='Bomb' else 18)*(1-progress*.6),(38 if kind=='Bomb' else 18)*(1-progress*.6),(1,1,1) if kind=='Bomb' else particle_tint,(1-progress)*.9,kind not in ['Paint','Bomb'],angle=math.degrees(math.sin(i)*.4 if kind=='Bomb' else angle+progress*(-4 if rewind else 2)))
  for e in scene.get('clears',[]):
   x,y=132+e['x'],155+e['y']*.86;p=e.get('age',.2)/.6;color=colors[e.get('color',2)-1]
   firework=e.get('kind')=='Firework';strength=2.8 if firework else min(1.5,1+(e.get('combo',1)-1)*.15)
   radius=(22+p*36)*strength
-  tinted('MatchRing',x,y,radius,radius,color,(1-p)*(.28 if firework else .75),True)
+  if firework:tinted('MatchRing',x,y,radius,radius,color,(1-p)*.28,True)
   tinted('ImpactLight',x,y,radius*1.5,radius*1.5,color,(1-p)**2*.45,True)
-  count=8 if firework else 3
+  if not firework:
+   stage=min(4,int(e.get('age',.2)/.12)+1);tinted('Break'+str(e.get('color',2))+'_'+str(stage),x,y,38,38,(1,1,1),min(1,(1-p)*2))
+  count=8 if firework else 0
   for j in range(1,count+1):
    angle=j*math.pi*2/count+e.get('phase',e['x']*.013);distance=(1-(1-p)**2)*34*strength
    size=(26 if firework else 10)*(1-p*.75)
    tinted('BombEmber' if firework else 'StarGlint',x+math.cos(angle)*distance,y+(math.sin(angle)*distance+p*p*18)*.86,size,size,color,1-p,True,angle=math.degrees(angle))
  for index,(x,y) in enumerate(scene.get('marbles',[])):
-  if scene.get('buff'):
+  if scene.get('buff') and scene['buff']!='EffectStasis':
    x+=132;y=155+y*.86;buff=scene['buff'];remaining=scene.get('buffTime',4)
    name={'Rewind':'RewindWrap','EffectStasis':'TimeChains','EffectMagnet':'MagnetWrap','EffectTreasure':'TreasureWrap'}.get(buff,buff)
    alpha=1;size=31
    if buff=='Frost':name='IceShell'+str(max(1,min(6,math.ceil(remaining*1.5))));alpha=min(1,remaining/.35)
    if name=='TimeChains':release=max(0,1-remaining/.45);alpha=1-release;size=29+release*9
    tinted(name,x,y,size,size,(1,1,1),alpha)
+ if scene.get('buff')=='EffectStasis' and scene.get('marbles'):
+  path=scene['path'];ends=[min(range(len(path)),key=lambda i:math.dist(path[i],pos)) for pos in [scene['marbles'][0],scene['marbles'][-1]]]
+  carry=0;release=max(0,1-scene.get('buffTime',3)/.45)
+  for a,b in zip(path[min(ends):max(ends)],path[min(ends)+1:max(ends)+1]):
+   length=math.dist(a,b)
+   while carry<=length:
+    f=carry/length if length else 0;x=a[0]+(b[0]-a[0])*f;y=a[1]+(b[1]-a[1])*f
+    tinted('TimeChainLink',132+x,155+y*.86,18,13+release*5,(1,1,1),1-release,angle=-math.degrees(math.atan2((b[1]-a[1])*.86,b[0]-a[0])))
+    carry+=12
+   carry-=length
  if scene.get('combo'):
   cx,cy=scene['combo']['point']
   text('COMBO! x'+str(scene['combo']['count']),132+cx,155+cy*.86-46,24,True)

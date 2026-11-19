@@ -1,3 +1,15 @@
+# 0.5.30
+
+Polished ice, continuous chains, radial explosions and breaking marbles.
+
+- New painted-style sprite artwork: six melting ice stages, interlocking metallic chain links, layered fire/embers, and magical Rewind/Magnet/Treasure wraps.
+- Time Stop binds the entire train with one continuous chain following the road and disappearing under tunnels.
+- Every marble colour has four visible breaking frames, with a reduced-motion alternative.
+- Bombs now explode in a larger circular 120-unit radius, reaching nearby bends and both lanes. Hidden tunnel balls are protected, unrelated balls remain intact, and caught specials trigger once on their own lane. Explosions remain visible during cascades.
+- Lightning visibly jumps more slowly: 0.18 seconds between targets, preserving the approved lightning style.
+
+Lua 5.1 gameplay/VFX tests, flight-game tests and StyLua passed. Both faction renders reviewed offline. Installed to WoW Forever and player ZIP verified without changing saves. Use /reload; restart WoW if newly added textures do not load. Six individual rendered PNGs and ice, breaking and lightning GIFs are attached (not live client screenshots).
+
 # 0.5.29
 
 Affected balls now visibly transform: Frost coats them in translucent ice that melts in six timer-driven stages; Time Stop binds them in crossed magical chains that loosen and fade as the stop ends. Rewind, Magnet and Treasure use wraps/bands/rims on the marbles instead of orbiting ability icons.

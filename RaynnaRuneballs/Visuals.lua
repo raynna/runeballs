@@ -7,7 +7,7 @@ local lastShots, lastRun, lastBurst
 local recoil, shake = 0, 0
 local aimX, aimY = 0, -1
 local pressure
-local trail, pops, embers, orbit = {}, {}, {}, {}
+local trail, embers, orbit = {}, {}, {}
 local glow, arrow, muzzle, specialGlow, ammoLight
 local holeSparks = {}
 local specialBursts = {}
@@ -119,7 +119,7 @@ function V.Build(owner, field)
         holeSparks[i]:SetBlendMode('ADD')
         holeSparks[i]:Hide()
     end
-    for lane = 1, 2 do
+    for lane = 1, 4 do
         local burst = { particles = {}, particleLights = {} }
         for _, key in ipairs(lightningLists) do
             burst[key] = {}
@@ -159,10 +159,6 @@ function V.Build(owner, field)
         end
         specialBursts[lane] = burst
     end
-    for i = 1, 32 do
-        pops[i] = A.Art(board.effectLayer, 'Ball1', 0, 0, 27, 27, 'ARTWORK')
-        pops[i]:Hide()
-    end
 end
 function V.Reset()
     if A.Feedback then
@@ -176,7 +172,7 @@ function V.Reset()
     board:SetPoint('TOPLEFT', 132, -155)
     move(board.launcher, 380, 250 - 5 / 0.86)
     move(board.loaded, 380, 250)
-    for _, list in ipairs({ trail, pops, embers, orbit, holeSparks }) do
+    for _, list in ipairs({ trail, embers, orbit, holeSparks }) do
         for _, t in ipairs(list) do
             t:Hide()
         end
@@ -262,7 +258,7 @@ function V.Tick(dt, r)
     board:SetPoint('TOPLEFT', 132 + offset, -155)
 end
 local function drawLightning(burst, impact, reduced)
-    local active = impact and not reduced and impact.age < 1.1
+    local active = impact and not reduced and impact.age < 1.55
     burst.sourceLight:SetShown(not not active)
     local previous = impact and { x = impact.x, y = impact.y }
     local color = impact and (A.colors[impact.color] or A.colors[6])
@@ -273,13 +269,13 @@ local function drawLightning(burst, impact, reduced)
     end
     for i = 1, 5 do
         local target = active and impact.links and impact.links[i]
-        local age = target and (impact.age - (i - 1) * 0.075) or -1
+        local age = target and (impact.age - (i - 1) * 0.18) or -1
         local visible = target and age >= 0 and age < 0.72
         for _, key in ipairs(lightningLists) do
             burst[key][i]:SetShown(not not visible)
         end
         if visible then
-            local travel = math.min(1, age / 0.045)
+            local travel = math.min(1, age / 0.10)
             local endX = previous.x + (target.x - previous.x) * travel
             local endY = previous.y + (target.y - previous.y) * travel
             local dx, dy = endX - previous.x, (endY - previous.y) * 0.86
@@ -308,7 +304,7 @@ local function drawLightning(burst, impact, reduced)
                 end
                 texture:SetAlpha(alpha * (key == 'arcBlooms' and 0.85 or key == 'arcs' and 0.9 or 0.75))
             end
-            local arrival = math.max(0, math.min(1, (age - 0.035) / 0.055)) * alpha
+            local arrival = math.max(0, math.min(1, (age - 0.09) / 0.08)) * alpha
             local light, flash = burst.hitLights[i], burst.hitFlashes[i]
             move(light, target.x, target.y)
             move(flash, target.x, target.y)
@@ -390,11 +386,16 @@ function V.Draw(r, active)
         end
     end
     for lane, burst in ipairs(specialBursts) do
-        local state = lane == 1 and r or r.other
+        local state = lane % 2 == 1 and r or r.other
         local impact = state and state.specialImpact
+        if lane > 2 then
+            impact = state and state.bombImpact ~= impact and state.bombImpact or nil
+        end
         drawLightning(
             burst,
-            state and (state.lightningImpact or (impact and impact.kind == 'Lightning' and impact)),
+            lane <= 2
+                and state
+                and (state.lightningImpact or (impact and impact.kind == 'Lightning' and impact)),
             A.MotionReduced()
         )
         burst.coreBloom:SetShown(
@@ -424,8 +425,8 @@ function V.Draw(r, active)
                     .. (impactTextures[impact.kind] or (rewind and 'PortalSwirl' or 'SpecialRing'))
                     .. '.tga'
             )
-            burst.core:SetBlendMode(extra and 'ADD' or 'BLEND')
-            burst.core:SetVertexColor(unpack(color))
+            burst.core:SetBlendMode(impact.kind == 'Bomb' and 'BLEND' or extra and 'ADD' or 'BLEND')
+            burst.core:SetVertexColor(unpack(impact.kind == 'Bomb' and { 1, 1, 1 } or color))
             move(burst.impactLight, impact.x, impact.y)
             burst.impactLight:SetVertexColor(unpack(color))
             burst.impactLight:SetAlpha((1 - progress) ^ 2 * (reduced and 0.15 or 0.35))
@@ -435,7 +436,9 @@ function V.Draw(r, active)
                 size = reduced and 32 or 26 + progress * 16
             end
             if impact.kind == 'Bomb' then
-                size = reduced and 55 or 35 + math.sin(math.min(1, progress * 1.4) * math.pi * 0.5) * 100
+                size = reduced and 55
+                    or 35
+                        + math.sin(math.min(1, progress * 2.5) * math.pi * 0.5) * ((impact.radius or A.Engine.BOMB_RADIUS) * 2 - 35)
             end
             burst.core:SetSize(size, size)
             burst.core:SetAlpha((1 - progress) * 0.95)
@@ -458,6 +461,7 @@ function V.Draw(r, active)
                 )
                 burst.coreHot:SetAlpha((1 - progress) * 0.35)
                 if impact.kind == 'Bomb' then
+                    burst.coreHot:SetTexture(A.media .. 'ImpactLight.tga')
                     burst.coreHot:SetSize(size * 0.58, size * 0.58)
                     burst.coreHot:SetVertexColor(1, 0.85, 0.3)
                     burst.coreHot:SetAlpha((1 - progress) ^ 2 * 0.95)
@@ -475,13 +479,10 @@ function V.Draw(r, active)
                     local py = impact.y
                         + math.sin(angle) * radius
                         + (impact.kind == 'Bomb' and progress * progress * 35 or 0)
-                    if impact.kind == 'Bomb' and impact.d then
-                        local direction = i <= 6 and -1 or 1
-                        px, py = A.Engine.Point(
-                            impact.route or A.Engine.Route(state),
-                            impact.d + direction * progress * 90 * (0.5 + (i % 6) / 10)
-                        )
-                        px, py = px + math.cos(angle) * 8, py + math.sin(angle) * 8
+                    if impact.kind == 'Bomb' then
+                        local radius = (impact.radius or A.Engine.BOMB_RADIUS) * math.min(1, progress * 2.5)
+                        px, py =
+                            impact.x + math.cos(angle) * radius, impact.y + math.sin(angle) * radius / 0.86
                     elseif impact.kind == 'Paint' and impact.links and impact.links[i] then
                         local target = impact.links[i]
                         px = impact.x + (target.x - impact.x) * math.min(1, progress * 2.5)
@@ -501,8 +502,10 @@ function V.Draw(r, active)
                     particle:SetTexture(
                         A.media .. (particleTextures[impact.kind] or 'SpecialSpark') .. '.tga'
                     )
-                    particle:SetBlendMode(impact.kind == 'Paint' and 'BLEND' or 'ADD')
-                    particle:SetVertexColor(unpack(tint))
+                    particle:SetBlendMode(
+                        (impact.kind == 'Paint' or impact.kind == 'Bomb') and 'BLEND' or 'ADD'
+                    )
+                    particle:SetVertexColor(unpack(impact.kind == 'Bomb' and { 1, 1, 1 } or tint))
                     particle:SetSize(
                         (impact.kind == 'Frost' and 22 or 18) * (1 - progress * 0.6),
                         18 * (1 - progress * 0.6)
@@ -632,18 +635,6 @@ function V.Draw(r, active)
             t:SetAlpha((1 - i / 7) * 0.7)
             t:SetSize(24 - i * 2, 24 - i * 2)
             t:SetVertexColor(unpack(lightColor(shot.color, shot.kind, moving)))
-        end
-    end
-    for i, t in ipairs(pops) do
-        local e = (active or r.effects)[i]
-        local visible = e and e.age < 0.16 and not A.MotionReduced()
-        t:SetShown(not not visible)
-        if visible then
-            t:SetTexture(A.media .. 'Ball' .. e.color .. '.tga')
-            move(t, e.x, e.y)
-            local size = 27 + math.sin(e.age / 0.16 * math.pi) * 12
-            t:SetSize(size, size)
-            t:SetAlpha(1 - e.age / 0.16)
         end
     end
     for i, t in ipairs(embers) do

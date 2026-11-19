@@ -1,6 +1,6 @@
 # Raynna's Runeballs
 
-A standalone coloured-marble shooter for WoW Forever (Interface 16001), version 0.5.29.
+A standalone coloured-marble shooter for WoW Forever (Interface 16001), version 0.5.30.
 Aim an arcane launcher into a winding chain and match three or more marbles
 before its leading ball reaches the void portal. Joining matching groups creates
 chain reactions and score multipliers. The 100-round campaign alternates twelve
@@ -33,7 +33,7 @@ when the sections actually touch. Combo multipliers reward successive joins.
 Each fired shot has an independent 3% chance to award special next-ammo.
 Ten types share that chance equally (0.3% per type overall):
 
-- **Bomb:** clears up to three neighbouring balls ahead and three behind its position, plus the matching group.
+- **Bomb:** blasts a circular 120-unit screen-space radius, including nearby bends and the other lane; tunnel-hidden balls remain protected.
 - **Frost:** slows the chain for four seconds.
 - **Rewind:** reverses the chain for up to 2.5 seconds.
 - **Rainbow:** completes every valid colour group touching it. Two whites + Rainbow + two blues clears all five; one white + Rainbow + one blue does not qualify.
@@ -258,3 +258,15 @@ rims also sit on the balls themselves. Matching colours remain visible, tunnel
 occlusion and insertion easing are preserved, and reduced motion keeps static
 materials. Bomb detonations use warm orange flame lobes, a hot yellow core and
 rising flame particles; idle special-ball glows still use their matching colour.
+
+
+Version 0.5.30 replaces the flat ice and effect materials with approved generated
+artwork: six thaw frames, polished interlocking chain links, fire/ember textures,
+and Rewind/Magnet/Treasure wraps. Time Stop uses one continuous chain from tail
+to head, following curves and hiding in tunnels, rather than binding each ball.
+Each marble colour now has four breaking frames: cracked, split, scattered and
+fading fragments. Reduced motion keeps a static split frame. Lightning jumps
+are spaced 0.18 seconds apart with 0.10-second travel and a 1.55-second lifetime.
+Bombs use a 120-unit circular blast that reaches nearby road sections and both
+lanes, activates caught specials once, and preserves out-of-radius/hidden balls.
+Explosion visuals persist when another caught special activates.
