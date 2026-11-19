@@ -48,10 +48,27 @@ function F.Draw(board, run, active, clock)
         draw(item[1], e.x, e.y, radius, color, (1 - p) * (firework and 0.28 or 0.75))
         draw(item[2], e.x, e.y, radius * 1.5, color, (1 - p) ^ 2 * 0.45)
         if not firework then
-            local stage = reduced and 2 or math.min(4, math.floor(e.age / 0.12) + 1)
+            local time = math.max(0, e.age)
+            local frame = math.min(3, time / 0.12)
+            local stage = reduced and 2 or math.floor(frame) + 1
+            local mix = reduced and 0 or frame - math.floor(frame)
+            mix = mix * mix * (3 - 2 * mix)
+            local travel = reduced and 0 or (1 - math.exp(-time * 4)) / 4
+            local x, y = e.x + (e.vx or 0) * travel, e.y + (e.vy or 0) * travel
+            if reduced then
+                x, y = e.restX or e.x, e.restY or e.y
+            end
+            local size = reduced and 36 or 36 + 6 * (1 - math.exp(-time * 5))
+            local alpha = math.min(1, (1 - p) * 2)
             item[1]:SetTexture(A.media .. 'Break' .. (e.color or 6) .. '_' .. stage .. '.tga')
             item[1]:SetBlendMode('BLEND')
-            draw(item[1], e.x, e.y, reduced and 36 or 38, { 1, 1, 1 }, math.min(1, (1 - p) * 2))
+            draw(item[1], x, y, size, { 1, 1, 1 }, alpha * (1 - mix))
+            if mix > 0 and stage < 4 then
+                item[3]:SetTexture(A.media .. 'Break' .. (e.color or 6) .. '_' .. (stage + 1) .. '.tga')
+                item[3]:SetBlendMode('BLEND')
+                draw(item[3], x, y, size, { 1, 1, 1 }, alpha * mix)
+            end
+            draw(item[2], x, y, radius * 1.5, color, (1 - p) ^ 2 * 0.45)
         else
             item[1]:SetTexture(A.media .. 'MatchRing.tga')
             item[1]:SetBlendMode('ADD')
@@ -60,6 +77,7 @@ function F.Draw(board, run, active, clock)
         if not reduced and firework then
             local count = 8
             for j = 1, count do
+                item[j + 2]:SetBlendMode('ADD')
                 item[j + 2]:SetTexture(A.media .. (firework and 'BombEmber' or 'StarGlint') .. '.tga')
                 local angle = j * math.pi * 2 / count + (e.phase or e.x * 0.013)
                 local distance = (1 - (1 - p) ^ 2) * 34 * strength

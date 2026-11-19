@@ -1,3 +1,15 @@
+# 0.5.31
+
+Smoother breaking animations using the same sprites.
+
+- Eased crossfades replace hard jumps between the four existing frames.
+- Fragments start at the visible marble position and inherit forward, rewind and gap-closing momentum, slowing naturally through drag.
+- Continuous expansion softens the motion; stopped balls remain stationary. Reduced motion retains the static alternative.
+- Clarified Magnet help: gap pull plus 50% lane speed for six seconds. Verified Lightning activates every caught special type, including Bomb cascades into multiple powers exactly once.
+- No new sprites or per-frame texture allocations; matching, scoring and balance are unchanged.
+
+Lua 5.1 gameplay/VFX tests, flight-game tests and StyLua passed. Both faction previews reviewed offline. Installed to WoW Forever with saves preserved; player ZIP verified. Use /reload. Preview images and GIFs are rendered demonstrations, not live client screenshots.
+
 # 0.5.30
 
 Polished ice, continuous chains, radial explosions and breaking marbles.

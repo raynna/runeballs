@@ -147,7 +147,12 @@ def preview(faction,scene):
   if firework:tinted('MatchRing',x,y,radius,radius,color,(1-p)*.28,True)
   tinted('ImpactLight',x,y,radius*1.5,radius*1.5,color,(1-p)**2*.45,True)
   if not firework:
-   stage=min(4,int(e.get('age',.2)/.12)+1);tinted('Break'+str(e.get('color',2))+'_'+str(stage),x,y,38,38,(1,1,1),min(1,(1-p)*2))
+   age=e.get('age',.2);frame=min(3,age/.12);stage=int(frame)+1;mix=frame-int(frame);mix=mix*mix*(3-2*mix)
+   travel=(1-math.exp(-age*4))/4;x+=e.get('vx',0)*travel;y+=e.get('vy',0)*travel*.86
+   size=36+6*(1-math.exp(-age*5));alpha=min(1,(1-p)*2)
+   tinted('Break'+str(e.get('color',2))+'_'+str(stage),x,y,size,size,(1,1,1),alpha*(1-mix))
+   if mix>0 and stage<4:tinted('Break'+str(e.get('color',2))+'_'+str(stage+1),x,y,size,size,(1,1,1),alpha*mix)
+
   count=8 if firework else 0
   for j in range(1,count+1):
    angle=j*math.pi*2/count+e.get('phase',e['x']*.013);distance=(1-(1-p)**2)*34*strength

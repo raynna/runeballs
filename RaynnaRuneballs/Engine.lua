@@ -603,12 +603,35 @@ local function removeGroup(run, first, last, combo, kind)
     for i = last, first, -1 do
         local b = run.balls[i]
         local bx, by = E.Point(E.Route(run), b.d)
+        local restX, restY = bx, by
+        local speed = b.motionSpeed or 0
+        local previousX, previousY = E.Point(E.Route(run), b.d - speed * 0.01)
+        local vx, vy = (bx - previousX) / 0.01, (by - previousY) / 0.01
+        if (run.stasis or 0) > 0 then
+            vx, vy = 0, 0
+        end
+        if b.slideAge then
+            local remaining = math.max(0, 1 - b.slideAge / 0.16)
+            bx, by = bx + (b.slideX or 0) * remaining ^ 3, by + (b.slideY or 0) * remaining ^ 3
+            vx, vy =
+                vx - (b.slideX or 0) * 3 * remaining ^ 2 / 0.16,
+                vy - (b.slideY or 0) * 3 * remaining ^ 2 / 0.16
+        end
+        -- Keep very fast insertion impulses readable without changing physics.
+        local velocity = math.sqrt(vx * vx + (vy * 0.86) ^ 2)
+        if velocity > 240 then
+            vx, vy = vx * 240 / velocity, vy * 240 / velocity
+        end
         if #run.effects >= 32 then
             table.remove(run.effects, 1)
         end
         run.effects[#run.effects + 1] = {
             x = bx,
             y = by,
+            vx = vx,
+            vy = vy,
+            restX = restX,
+            restY = restY,
             age = 0,
             color = b.color,
             combo = combo,
@@ -763,7 +786,13 @@ function E.Insert(run, index, color, target, kind, hitX, hitY)
         d = math.max(rear.d + spacing, math.min(front.d - spacing, target))
     end
     local shifted = {}
-    local inserted = { color = color, d = d, kind = kind }
+    local driver = rear or front
+    local inserted = {
+        color = color,
+        d = d,
+        kind = kind,
+        motionSpeed = driver and driver.motionSpeed or 0,
+    }
     if hitX and hitY then
         local x, y = E.Point(E.Route(run), d)
         inserted.slideX, inserted.slideY, inserted.slideAge = hitX - x, hitY - y, 0
@@ -850,6 +879,9 @@ end
 local function advanceChain(run, dt)
     local balls = run.balls
     if #balls == 0 or (run.stasis or 0) > 0 then
+        for _, ball in ipairs(balls) do
+            ball.motionSpeed = 0
+        end
         return
     end
     local speed = E.Speed(run) * (run.slow > 0 and 0.28 or 1) * ((run.magnet or 0) > 0 and 0.5 or 1)
@@ -860,6 +892,7 @@ local function advanceChain(run, dt)
         end
         for _, b in ipairs(balls) do
             b.d = b.d - delta
+            b.motionSpeed = -delta / math.max(dt, 0.000001)
         end
         return
     end
@@ -893,7 +926,9 @@ local function advanceChain(run, dt)
             end
         end
         for i = group.first, group.last do
-            balls[i].d = balls[i].d + delta
+            local ball = balls[i]
+            ball.d = ball.d + delta
+            ball.motionSpeed = delta / math.max(dt, 0.000001)
         end
     end
     for _, contact in ipairs(contacts) do

@@ -1137,3 +1137,55 @@ E.Animate(r,1.1);A.Draw();assert(not r.bombImpact and not A.Visuals.specialBurst
 for colour in range(1,7):
  for frame in range(1,5):assert (ADDON/'Media'/f'Break{colour}_{frame}.tga').exists()
 print('PASS: all 24 breaking frames, reduced motion, bomb cascade visibility and shared-record expiry')
+
+
+lua=runtime()
+lua.execute("""
+local E=A.Engine;local db={};E.Init(db)
+for _,reverse in ipairs({false,true}) do
+ local r=E.NewRun(db,1);r.paused=false;r.remaining=0;r.balls={{d=600,color=1},{d=575,color=2},{d=550,color=3}}
+ if reverse then r.reverse=2 end
+ E.Step(db,.025);assert(reverse and r.balls[1].motionSpeed<0 or not reverse and r.balls[1].motionSpeed>0)
+ local x1,y1=E.Point(1,r.balls[1].d);local x0,y0=E.Point(1,r.balls[1].d-1)
+ for _,b in ipairs(r.balls) do b.color=1 end
+ E.Match(r,2);local e=r.effects[#r.effects]
+ assert((e.vx*(x1-x0)+e.vy*(y1-y0))*(reverse and -1 or 1)>0,'break carries forward/reverse tangent momentum')
+end
+local r=E.NewRun(db,1);r.balls={{d=400,color=1,motionSpeed=100},{d=375,color=1,motionSpeed=100},{d=350,color=1,motionSpeed=100}};r.stasis=2
+E.Match(r,2);assert(r.effects[1].vx==0 and r.effects[1].vy==0,'stopped balls do not drift')
+r=E.NewRun(db,1);r.balls={{d=400,color=1,slideX=10,slideY=5,slideAge=.08},{d=375,color=1},{d=350,color=1}}
+local x,y=E.Point(1,400);E.Match(r,2);local e=r.effects[#r.effects]
+assert(math.abs(e.x-x-1.25)<.001 and math.abs(e.y-y-.625)<.001,'break starts at eased visual position')
+""")
+lua=runtime()
+lua.execute("""
+A.events.OnEvent(A.events,'ADDON_LOADED','RaynnaRuneballs');A.events.OnEvent(A.events,'PLAYER_LOGIN');A.Open(false)
+local r=A.db.run;r.effects={{x=300,y=200,vx=100,vy=-50,age=.06,color=2}};A.Draw()
+local fx=A.Feedback.clears[1]
+assert(fx[1].texture==A.media..'Break2_1.tga' and fx[3].texture==A.media..'Break2_2.tga')
+assert(math.abs(fx[1].alpha-.5)<.001 and math.abs(fx[3].alpha-.5)<.001,'smooth midpoint crossfade')
+assert(fx[1].pointArgs[3]>300 and fx[1].pointArgs[4]>-172,'fragments inherit velocity')
+local frames=#Frames;A.Draw();assert(#Frames==frames,'blend reuses existing pool slots')
+A.db.options.reducedMotion=true;A.Draw()
+assert(fx[1].pointArgs[3]==300 and not fx[3]:IsShown(),'reduced motion disables travel and blending')
+""")
+print('PASS: forward/reverse momentum, stopped chains, eased spawn position, crossfade, pool reuse and reduced motion')
+
+
+lua=runtime()
+lua.execute("""
+local E=A.Engine;local db={};E.Init(db)
+for _,kind in ipairs({'Bomb','Frost','Rewind','Lightning','Paint','Stasis','Magnet','Treasure','Ward','Rainbow'}) do
+ local r=E.NewRun(db,1);r.remaining=0;r.balls={{d=500,color=2},{d=475,color=2,kind='Lightning'},{d=450,color=2},{d=425,color=1},{d=400,color=2,kind=kind}}
+ local calls={};local sound=A.GameSound;A.GameSound=function(k)calls[k]=(calls[k] or 0)+1 end
+ E.Match(r,2);A.GameSound=sound
+ assert(calls[kind]==(kind=='Lightning' and 2 or 1),'lightning activates caught '..kind..' once')
+end
+local r=E.NewRun(db,1);r.remaining=0
+r.balls={{d=500,color=2},{d=475,color=2,kind='Lightning'},{d=450,color=2},{d=425,color=1,kind='Stasis'},{d=400,color=2,kind='Bomb'},{d=375,color=3,kind='Magnet'}}
+local calls={};local sound=A.GameSound;A.GameSound=function(k)calls[k]=(calls[k] or 0)+1 end
+E.Match(r,2);A.GameSound=sound
+assert(calls.Lightning==1 and calls.Bomb==1 and calls.Stasis==1 and calls.Magnet==1,'lightning to bomb to multiple effects resolves once each')
+assert(r.stasis==3 and r.magnet==6 and r.bombImpact and r.lightningImpact,'both powers and their blast visuals survive')
+""")
+print('PASS: lightning activates all ten caught special types and bomb cascades trigger multiple powers once')

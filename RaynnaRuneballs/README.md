@@ -1,6 +1,6 @@
 # Raynna's Runeballs
 
-A standalone coloured-marble shooter for WoW Forever (Interface 16001), version 0.5.30.
+A standalone coloured-marble shooter for WoW Forever (Interface 16001), version 0.5.31.
 Aim an arcane launcher into a winding chain and match three or more marbles
 before its leading ball reaches the void portal. Joining matching groups creates
 chain reactions and score multipliers. The 100-round campaign alternates twelve
@@ -270,3 +270,10 @@ are spaced 0.18 seconds apart with 0.10-second travel and a 1.55-second lifetime
 Bombs use a 120-unit circular blast that reaches nearby road sections and both
 lanes, activates caught specials once, and preserves out-of-radius/hidden balls.
 Explosion visuals persist when another caught special activates.
+
+
+Version 0.5.31 smooths the existing four breaking frames with eased crossfades
+and continuous expansion. Breaks begin at the actual eased marble position,
+inherit forward/reverse/gap-closing motion, then gradually slow through drag.
+Stationary chains stay stationary; reduced motion uses a static frame. No new
+sprites are added, and the blend reuses existing pooled textures.
