@@ -19,7 +19,7 @@ for _, kind in ipairs({ 'Lightning', 'Paint', 'Stasis', 'Magnet', 'Treasure', 'W
     specialColors[kind] = { 1, 1, 1 }
 end
 local impactTextures = {
-    Bomb = 'BombBurst',
+    Bomb = 'FireBlast',
     Frost = 'FrostBurst',
     Rewind = 'RewindBurst',
     Rainbow = 'RainbowBurst',
@@ -31,7 +31,7 @@ local impactTextures = {
     Ward = 'WardBurst',
 }
 local particleTextures = {
-    Bomb = 'BombEmber',
+    Bomb = 'FireTongue',
     Rewind = 'EnergyMote',
     Rainbow = 'StarGlint',
     Lightning = 'LightningFlash',
@@ -414,6 +414,9 @@ function V.Draw(r, active)
             local color = impact.kind == 'Rainbow' and lightColor(impact.color, 'Rainbow', not reduced)
                 or A.colors[impact.color]
                 or A.colors[6]
+            if impact.kind == 'Bomb' then
+                color = { 1, 0.32 + (1 - progress) * 0.25, 0.04 }
+            end
             local rewind = impact.kind == 'Rewind'
             local extra = impactTextures[impact.kind] ~= nil
             burst.core:SetTexture(
@@ -430,6 +433,9 @@ function V.Draw(r, active)
             local size = reduced and 55 or rewind and (85 - progress * 45) or (40 + progress * 100)
             if impact.kind == 'Lightning' then
                 size = reduced and 32 or 26 + progress * 16
+            end
+            if impact.kind == 'Bomb' then
+                size = reduced and 55 or 35 + math.sin(math.min(1, progress * 1.4) * math.pi * 0.5) * 100
             end
             burst.core:SetSize(size, size)
             burst.core:SetAlpha((1 - progress) * 0.95)
@@ -451,6 +457,11 @@ function V.Draw(r, active)
                     0.65 + color[3] * 0.35
                 )
                 burst.coreHot:SetAlpha((1 - progress) * 0.35)
+                if impact.kind == 'Bomb' then
+                    burst.coreHot:SetSize(size * 0.58, size * 0.58)
+                    burst.coreHot:SetVertexColor(1, 0.85, 0.3)
+                    burst.coreHot:SetAlpha((1 - progress) ^ 2 * 0.95)
+                end
             end
             for i, particle in ipairs(burst.particles) do
                 local light = burst.particleLights[i]
@@ -496,7 +507,14 @@ function V.Draw(r, active)
                         (impact.kind == 'Frost' and 22 or 18) * (1 - progress * 0.6),
                         18 * (1 - progress * 0.6)
                     )
-                    particle:SetRotation(angle + progress * (rewind and -4 or 2))
+                    particle:SetRotation(
+                        impact.kind == 'Bomb' and math.sin(i) * 0.4 or angle + progress * (rewind and -4 or 2)
+                    )
+                    if impact.kind == 'Bomb' then
+                        particle:SetSize(24 * (1 - progress * 0.6), 38 * (1 - progress * 0.6))
+                        move(particle, px, py - progress * 25)
+                        move(light, px, py - progress * 25)
+                    end
                     particle:SetAlpha((1 - progress) * 0.9)
                     light:SetVertexColor(unpack(tint))
                     light:SetSize(28, 28)

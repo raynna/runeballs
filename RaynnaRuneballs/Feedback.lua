@@ -66,25 +66,30 @@ function F.Draw(board, run, active, clock)
         end
     end
     local count = 0
-    -- These cues belong to the affected marble, never to tunnel-hidden balls.
-    -- Rings preserve its matching colour; the small orbiting glyph identifies the buff.
+    -- Material overlays follow simulation timers, so pausing and saved runs
+    -- preserve the visible thaw/release stage without a second animation clock.
     for _, lane in ipairs(run.other and { run, run.other } or { run }) do
         local states = {}
+        local function add(name, alpha, size, rotation)
+            states[#states + 1] = { name = name, alpha = alpha, size = size, rotation = rotation or 0 }
+        end
         if run.status == 'playing' then
             if (lane.reverse or 0) > 0 then
-                states[#states + 1] = 'Rewind'
+                add('RewindWrap', math.min(1, lane.reverse / 0.4), 31, reduced and 0 or clock * 2)
             end
             if (lane.slow or 0) > 0 then
-                states[#states + 1] = 'Frost'
+                local stage = math.max(1, math.min(6, math.ceil(lane.slow * 1.5)))
+                add('IceShell' .. stage, math.min(1, lane.slow / 0.35), 31)
             end
             if (lane.stasis or 0) > 0 then
-                states[#states + 1] = 'EffectStasis'
+                local release = math.max(0, 1 - lane.stasis / 0.45)
+                add('TimeChains', 1 - release, reduced and 29 or 29 + release * 9)
             end
             if (lane.magnet or 0) > 0 then
-                states[#states + 1] = 'EffectMagnet'
+                add('MagnetWrap', math.min(0.65, lane.magnet / 0.5), 30, reduced and 0 or -clock)
             end
             if (lane.treasure or 0) > 0 then
-                states[#states + 1] = 'EffectTreasure'
+                add('TreasureWrap', math.min(0.8, lane.treasure / 0.5), 29)
             end
         end
         for _, ball in ipairs(lane.balls) do
@@ -95,23 +100,16 @@ function F.Draw(board, run, active, clock)
                     item = { texture(board, 'MatchRing') }
                     F.statuses[count] = item
                 end
-                local x, y = A.Engine.Point(A.Engine.Route(lane), ball.d)
+                local x, y = A.BallPosition(lane, ball)
                 local color = A.colors[ball.color] or A.colors[6]
-                draw(item[1], x, y, 29, color, reduced and 0.45 or 0.4 + math.sin(clock * 3) * 0.1)
-                for j, name in ipairs(states) do
-                    local angle = j * math.pi * 2 / #states + (reduced and 0 or -clock * 1.7)
+                draw(item[1], x, y, 29, color, 0.15)
+                for j, state in ipairs(states) do
                     if not item[j + 1] then
-                        item[j + 1] = texture(board, 'StarGlint')
+                        item[j + 1] = texture(board, state.name)
                     end
-                    item[j + 1]:SetTexture(A.media .. name .. '.tga')
-                    draw(
-                        item[j + 1],
-                        x + math.cos(angle) * 15,
-                        y + math.sin(angle) * 17,
-                        10,
-                        { 1, 1, 1 },
-                        0.8
-                    )
+                    item[j + 1]:SetTexture(A.media .. state.name .. '.tga')
+                    item[j + 1]:SetBlendMode('BLEND')
+                    draw(item[j + 1], x, y, state.size, { 1, 1, 1 }, state.alpha, state.rotation)
                 end
             end
         end

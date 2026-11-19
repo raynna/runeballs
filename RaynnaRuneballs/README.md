@@ -1,6 +1,6 @@
 # Raynna's Runeballs
 
-A standalone coloured-marble shooter for WoW Forever (Interface 16001), version 0.5.28.
+A standalone coloured-marble shooter for WoW Forever (Interface 16001), version 0.5.29.
 Aim an arcane launcher into a winding chain and match three or more marbles
 before its leading ball reaches the void portal. Joining matching groups creates
 chain reactions and score multipliers. The 100-round campaign alternates twelve
@@ -248,3 +248,13 @@ Active Rewind, Frost, Stasis, Magnet and Treasure have small per-ball indicators
 including simultaneous buffs; tunnel-hidden marbles remain hidden. Reduced motion
 uses steady indicators and disables flying fragments. Magnet now lasts six seconds,
 pulls unlike gaps at 110 units/sec and halves forward lane speed while active.
+
+
+Version 0.5.29 replaces orbiting buff icons with material overlays on affected
+marbles. Frost encases them in translucent faceted ice; six melting stages follow
+the remaining four-second timer. Time Stop binds them with crossed chains that
+release during its final 0.45 seconds. Rewind wraps, magnetic bands and treasure
+rims also sit on the balls themselves. Matching colours remain visible, tunnel
+occlusion and insertion easing are preserved, and reduced motion keeps static
+materials. Bomb detonations use warm orange flame lobes, a hot yellow core and
+rising flame particles; idle special-ball glows still use their matching colour.

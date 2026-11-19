@@ -1,3 +1,11 @@
+# 0.5.29
+
+Affected balls now visibly transform: Frost coats them in translucent ice that melts in six timer-driven stages; Time Stop binds them in crossed magical chains that loosen and fade as the stop ends. Rewind, Magnet and Treasure use wraps/bands/rims on the marbles instead of orbiting ability icons.
+
+Bomb detonations now have orange flame shapes, a bright yellow core, firelight and rising flame particles. Idle special-ball colours, gameplay timing and approved lightning are unchanged. Hidden tunnel balls stay hidden, insertion motion stays aligned, and reduced motion retains steady material cues.
+
+Lua 5.1 tests and StyLua passed; both faction previews reviewed offline. Installed to WoW Forever without touching saves. Use /reload; restart WoW if newly added textures do not load. Six labelled PNGs and an animated ice-melt preview are attached (rendered demonstrations, not live screenshots).
+
 # 0.5.28
 
 Match clears, combos and victories now have colour-matched light bursts and spark particles. Active Rewind, Frost, Stasis, Magnet and Treasure show indicators on affected visible balls, including overlapping buffs. Warded exit portals have a clear cyan shield.

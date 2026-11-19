@@ -742,7 +742,8 @@ for color=1,6 do
   for channel=1,3 do assert(tint[channel]==A.colors[color][channel],'aura uses matching marble colour') end
   E.Special(r,1,kind);assert(r.specialImpact.color==color)
   A.Draw();tint=A.Visuals.specialBursts[1].core.tint
-  for channel=1,3 do assert(tint[channel]==A.colors[color][channel]) end
+  if kind=='Bomb' then assert(tint[1]==1 and tint[3]==.04,'detonation is fire while idle aura retains ball colour')
+  else for channel=1,3 do assert(tint[channel]==A.colors[color][channel]) end end
  end
 end
 """)
@@ -1012,6 +1013,7 @@ for _,kind in ipairs({'Bomb','Frost','Rewind','Rainbow','Paint','Stasis','Magnet
  assert(fx.particleLights[1]:IsShown() and fx.particleLights[1].blendMode=='ADD','all specials illuminate particles')
  if kind=='Rainbow' then
   assert(fx.particleLights[1].tint[1]~=fx.particleLights[2].tint[1],'rainbow has multicolour light')
+ elseif kind=='Bomb' then assert(fx.particleLights[1].tint[1]==1 and fx.particleLights[1].tint[3]==.04,'bomb emits firelight')
  else assert(fx.particleLights[1].tint[2]==A.colors[3][2],'coloured powers keep matching light') end
  A.db.options.reducedMotion=true;A.Draw()
  for _,light in ipairs(fx.particleLights) do assert(not light:IsShown()) end
@@ -1056,3 +1058,21 @@ r.status='won';E.BeginEnding(r,true);E.Step(db,.05)
 assert(r.effects[#r.effects].kind=='Firework','victory emits fireworks')
 """)
 print('PASS: magnet slows an intact train and wins emit fireworks')
+
+
+lua=runtime()
+lua.execute("""
+A.events.OnEvent(A.events,'ADDON_LOADED','RaynnaRuneballs');A.events.OnEvent(A.events,'PLAYER_LOGIN');A.Open(false)
+local r=A.db.run;r.balls={{d=400,color=1},{d=375,color=2}};r.slow=4;r.paused=false
+A.Draw();local shell=A.Feedback.statuses[1][2]
+assert(shell.texture==A.media..'IceShell6.tga' and shell.blendMode=='BLEND')
+r.slow=2;A.Draw();assert(shell.texture==A.media..'IceShell3.tga')
+r.slow=.2;A.Draw();assert(shell.texture==A.media..'IceShell1.tga' and shell.alpha<.6)
+r.slow=0;r.stasis=3;A.Draw();assert(shell.texture==A.media..'TimeChains.tga' and shell.alpha==1)
+r.stasis=.2;A.Draw();assert(shell.alpha<.5)
+A.db.options.reducedMotion=true;A.Draw();assert(shell:IsShown(),'reduced motion retains physical state')
+r.stasis=0;A.Draw();assert(not shell:IsShown(),'material vanishes at expiry')
+""")
+for name in ['IceShell'+str(i) for i in range(1,7)]+['TimeChains','RewindWrap','MagnetWrap','TreasureWrap','FireBlast','FireBlastGlow','FireTongue']:
+ assert (ADDON/'Media'/f'{name}.tga').exists()
+print('PASS: six ice melt stages, chain release, expiry, firelight and reduced-motion materials')

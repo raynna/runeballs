@@ -95,16 +95,19 @@ def preview(faction,scene):
   x,y=impact['point'];x+=132;y=155+y*.86
   progress=impact.get('progress',.35);kind=impact['kind'];tint=colors[impact['color']-1]
   rewind=kind=='Rewind';size=85-progress*45 if rewind else 40+progress*100
-  impact_textures={'Bomb':'BombBurst','Frost':'FrostBurst','Rewind':'RewindBurst','Rainbow':'RainbowBurst','Lightning':'LightningFlash','Paint':'PaintBurst','Stasis':'StasisBurst','Magnet':'MagnetBurst','Treasure':'TreasureBurst','Ward':'WardBurst'}
-  particles={'Bomb':'BombEmber','Rewind':'EnergyMote','Rainbow':'StarGlint','Paint':'PaintDrop','Stasis':'FrostShard','Magnet':'EnergyMote','Treasure':'CoinGlint','Ward':'StarGlint','Frost':'FrostShard'}
+  impact_textures={'Bomb':'FireBlast','Frost':'FrostBurst','Rewind':'RewindBurst','Rainbow':'RainbowBurst','Lightning':'LightningFlash','Paint':'PaintBurst','Stasis':'StasisBurst','Magnet':'MagnetBurst','Treasure':'TreasureBurst','Ward':'WardBurst'}
+  particles={'Bomb':'FireTongue','Rewind':'EnergyMote','Rainbow':'StarGlint','Paint':'PaintDrop','Stasis':'FrostShard','Magnet':'EnergyMote','Treasure':'CoinGlint','Ward':'StarGlint','Frost':'FrostShard'}
+  if kind=='Bomb':tint=(1,.32+(1-progress)*.25,.04)
   extra=kind in impact_textures
   tinted('ImpactLight',x,y,95,95,tint,(1-progress)**2*.35,True)
   if kind=='Lightning':size=26+progress*16
+  if kind=='Bomb':size=35+math.sin(min(1,progress*1.4)*math.pi*.5)*100
   tinted(impact_textures.get(kind,'PortalSwirl' if rewind else 'SpecialRing'),x,y,size,size,tint,(1-progress)*.95,extra,angle=math.degrees(-progress*5) if rewind or kind=='Magnet' else 0)
   if kind!='Lightning':
    rotation=math.degrees(-progress*5) if rewind or kind=='Magnet' else 0
    tinted(impact_textures[kind]+'Glow',x,y,size,size,tint,(1-progress)*.7,True,angle=rotation)
-   if kind!='Paint':tinted(impact_textures[kind],x,y,size,size,tuple(.65+v*.35 for v in tint),(1-progress)*.35,True,angle=rotation)
+   if kind=='Bomb':tinted('FireBlast',x,y,size*.58,size*.58,(1,.85,.3),(1-progress)**2*.95,True)
+   elif kind!='Paint':tinted(impact_textures[kind],x,y,size,size,tuple(.65+v*.35 for v in tint),(1-progress)*.35,True,angle=rotation)
   if kind=='Lightning':
    age=progress*1.1
    tinted('ImpactLight',x,y,80,80,tint,max(0,1-age/.3)*.7,True)
@@ -134,8 +137,9 @@ def preview(faction,scene):
     elif kind=='Magnet':px=x+math.cos(angle)*70*(1-progress);py=y+math.sin(angle)*70*(1-progress)*.86
     elif kind=='Stasis':px=x+math.cos(angle)*45;py=y+math.sin(angle)*45*.86
     particle_tint=colors[(i-1)%6] if kind=='Rainbow' else tint
+    if kind=='Bomb':py-=progress*25*.86
     tinted('ImpactLight',px,py,28,28,particle_tint,(1-progress)*.4,True)
-    tinted(particles.get(kind,'SpecialSpark'),px,py,(22 if kind=='Frost' else 18)*(1-progress*.6),18*(1-progress*.6),particle_tint,(1-progress)*.9,kind!='Paint',angle=math.degrees(angle+progress*(-4 if rewind else 2)))
+    tinted(particles.get(kind,'SpecialSpark'),px,py,(22 if kind=='Frost' else 24 if kind=='Bomb' else 18)*(1-progress*.6),(38 if kind=='Bomb' else 18)*(1-progress*.6),particle_tint,(1-progress)*.9,kind!='Paint',angle=math.degrees(angle+progress*(-4 if rewind else 2)))
  for e in scene.get('clears',[]):
   x,y=132+e['x'],155+e['y']*.86;p=e.get('age',.2)/.6;color=colors[e.get('color',2)-1]
   firework=e.get('kind')=='Firework';strength=2.8 if firework else min(1.5,1+(e.get('combo',1)-1)*.15)
@@ -149,9 +153,12 @@ def preview(faction,scene):
    tinted('BombEmber' if firework else 'StarGlint',x+math.cos(angle)*distance,y+(math.sin(angle)*distance+p*p*18)*.86,size,size,color,1-p,True,angle=math.degrees(angle))
  for index,(x,y) in enumerate(scene.get('marbles',[])):
   if scene.get('buff'):
-   color=colors[index%6];x+=132;y=155+y*.86
-   tinted('MatchRing',x,y,29,29,color,.45,True)
-   tinted(scene['buff'],x+15,y,10,10,(1,1,1),.8,True)
+   x+=132;y=155+y*.86;buff=scene['buff'];remaining=scene.get('buffTime',4)
+   name={'Rewind':'RewindWrap','EffectStasis':'TimeChains','EffectMagnet':'MagnetWrap','EffectTreasure':'TreasureWrap'}.get(buff,buff)
+   alpha=1;size=31
+   if buff=='Frost':name='IceShell'+str(max(1,min(6,math.ceil(remaining*1.5))));alpha=min(1,remaining/.35)
+   if name=='TimeChains':release=max(0,1-remaining/.45);alpha=1-release;size=29+release*9
+   tinted(name,x,y,size,size,(1,1,1),alpha)
  if scene.get('combo'):
   cx,cy=scene['combo']['point']
   text('COMBO! x'+str(scene['combo']['count']),132+cx,155+cy*.86-46,24,True)
