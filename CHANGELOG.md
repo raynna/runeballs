@@ -1,3 +1,14 @@
+# 0.5.32
+
+Clearer Magnet, Treasure and Time Stop feedback.
+
+- Magnet now sends glowing cyan arrows through open gaps toward the rear group, following the road. Static arrows are used with reduced motion. Tunnel-hidden sections stay hidden, and pulling cues stop while Stasis or Rewind overrides Magnet.
+- Treasure uses a clear gold ×2 on all six coloured balls and its ability glyph.
+- A thicker continuous Time Stop chain runs beside the balls, with one hourglass marker.
+- Frost, Rewind and Treasure sit around the outer rims; Magnet no longer crosses the matching colour with bands. Ball centres stay clear.
+
+Lua 5.1 gameplay/VFX tests, flight-game tests and StyLua passed. Both faction previews reviewed offline. Installed to WoW Forever with saves preserved and the player ZIP verified. Use /reload; restart WoW if a new texture does not load. Six rendered previews and animation GIFs are attached; these are not live client screenshots.
+
 # 0.5.31
 
 Smoother breaking animations using the same sprites.

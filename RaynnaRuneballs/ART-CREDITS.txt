@@ -59,3 +59,5 @@ The approved ice, effect wraps, flame materials and 24 marble-break frames repla
 the earlier procedural materials. tools/build_runeballs_materials.py slices the
 source atlases and downsamples while preserving their alpha and cell alignment.
 Source PNGs are in ArtSource; player packages contain only runtime TGA sprites.
+
+The gold ×2 Treasure glyph uses the bundled licensed Lilita One font via tools/build_runeballs_specials.py --kind Treasure. MagnetPull is an original antialiased direction marker from tools/build_runeballs_magnet_pull.py.

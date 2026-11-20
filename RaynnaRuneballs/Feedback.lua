@@ -1,5 +1,5 @@
 local _, A = ...
-local F = { clears = {}, statuses = {}, chains = {} }
+local F = { clears = {}, statuses = {}, chains = {}, pulls = {}, stops = {} }
 A.Feedback = F
 local function texture(board, name)
     local t = A.Art(board.effectLayer, name, 0, 0, 1, 1, 'ARTWORK')
@@ -16,7 +16,7 @@ local function draw(t, x, y, size, color, alpha, angle)
     t:Show()
 end
 function F.Reset()
-    for _, pool in ipairs({ F.clears, F.statuses, F.chains }) do
+    for _, pool in ipairs({ F.clears, F.statuses, F.chains, F.pulls, F.stops }) do
         for _, item in ipairs(pool) do
             for _, t in ipairs(item) do
                 t:Hide()
@@ -93,7 +93,7 @@ function F.Draw(board, run, active, clock)
             end
         end
     end
-    local count, chainCount = 0, 0
+    local count, chainCount, pullCount, stopCount = 0, 0, 0, 0
     -- Material overlays follow simulation timers, so pausing and saved runs
     -- preserve the visible thaw/release stage without a second animation clock.
     for _, lane in ipairs(run.other and { run, run.other } or { run }) do
@@ -119,9 +119,84 @@ function F.Draw(board, run, active, clock)
                     local link = item[1]
                     local x, y = A.Engine.Point(route, distance)
                     local nx, ny = A.Engine.Point(route, math.min(last + 1, distance + 5))
+                    local dx, dy = nx - x, (ny - y) * 0.86
+                    local length = math.max(0.001, math.sqrt(dx * dx + dy * dy))
+                    -- Bind alongside the train, leaving every matching colour exposed.
+                    x, y = x - dy / length * 17, y + dx / length * 17 / 0.86
                     link:SetBlendMode('BLEND')
-                    draw(link, x, y, 18, { 1, 1, 1 }, 1 - release, -math.atan2((ny - y) * 0.86, nx - x))
-                    link:SetSize(18, reduced and 13 or 13 + release * 5)
+                    if x >= 10 and x <= 750 and y >= 12 and y <= 488 then
+                        draw(link, x, y, 20, { 1, 1, 1 }, 1 - release, -math.atan2(dy, dx))
+                    end
+                    link:SetSize(20, reduced and 15 or 15 + release * 5)
+                end
+            end
+            if not A.Engine.Hidden(lane, last) then
+                stopCount = stopCount + 1
+                local item = F.stops[stopCount]
+                if not item then
+                    item = { texture(board, 'EffectStasis') }
+                    F.stops[stopCount] = item
+                end
+                local x, y = A.Engine.Point(route, last)
+                local px, py = A.Engine.Point(route, last - 4)
+                local dx, dy = x - px, (y - py) * 0.86
+                local length = math.max(0.001, math.sqrt(dx * dx + dy * dy))
+                item[1]:SetBlendMode('BLEND')
+                draw(
+                    item[1],
+                    x - dy / length * 29,
+                    y + dx / length * 29 / 0.86,
+                    19,
+                    { 0.9, 0.78, 1 },
+                    1 - release
+                )
+            end
+        end
+        -- Draw the pull along the actual road, from the leading group back
+        -- toward the rear group. Other powers that stop/rewind supersede Magnet.
+        if
+            run.status == 'playing'
+            and (lane.magnet or 0) > 0
+            and (lane.stasis or 0) <= 0
+            and (lane.reverse or 0) <= 0
+        then
+            local route = A.Engine.Route(lane)
+            for i = 1, #lane.balls - 1 do
+                local front, rear = lane.balls[i], lane.balls[i + 1]
+                local gap = front.d - rear.d
+                if gap > 40 and front.d >= 38 and pullCount < 96 then
+                    local low, high = math.max(24, rear.d + 13), front.d - 13
+                    if high > low then
+                        for j = 1, 3 do
+                            local phase = reduced and j / 4 or (clock * 85 / (high - low) + j / 3) % 1
+                            local distance = high - phase * (high - low)
+                            if
+                                not A.Engine.Hidden(lane, distance)
+                                and not A.Engine.Hidden(lane, distance - 7)
+                                and not A.Engine.Hidden(lane, distance + 7)
+                            then
+                                pullCount = pullCount + 1
+                                local item = F.pulls[pullCount]
+                                if not item then
+                                    item = { texture(board, 'MagnetPull'), texture(board, 'ImpactLight') }
+                                    F.pulls[pullCount] = item
+                                end
+                                local x, y = A.Engine.Point(route, distance)
+                                local tx, ty = A.Engine.Point(route, distance - 4)
+                                local alpha = reduced and 0.7 or 0.45 + math.sin(phase * math.pi) * 0.5
+                                draw(item[2], x, y, 23, { 0.25, 0.8, 1 }, alpha * 0.28)
+                                draw(
+                                    item[1],
+                                    x,
+                                    y,
+                                    17,
+                                    { 0.45, 0.9, 1 },
+                                    alpha,
+                                    -math.atan2((ty - y) * 0.86, tx - x)
+                                )
+                            end
+                        end
+                    end
                 end
             end
         end
@@ -131,17 +206,18 @@ function F.Draw(board, run, active, clock)
         end
         if run.status == 'playing' then
             if (lane.reverse or 0) > 0 then
-                add('RewindWrap', math.min(1, lane.reverse / 0.4), 31, reduced and 0 or clock * 2)
+                add('RewindWrap', math.min(0.8, lane.reverse / 0.4), 35, reduced and 0 or clock * 2)
             end
             if (lane.slow or 0) > 0 then
                 local stage = math.max(1, math.min(6, math.ceil(lane.slow * 1.5)))
-                add('IceShell' .. stage, math.min(1, lane.slow / 0.35), 31)
+                add('IceShell' .. stage, math.min(0.85, lane.slow / 0.35), 35)
             end
             if (lane.magnet or 0) > 0 then
-                add('MagnetWrap', math.min(0.65, lane.magnet / 0.5), 30, reduced and 0 or -clock)
+                add('MatchRing', math.min(0.4, lane.magnet / 0.5), 34)
+                states[#states].color = { 0.4, 0.85, 1 }
             end
             if (lane.treasure or 0) > 0 then
-                add('TreasureWrap', math.min(0.8, lane.treasure / 0.5), 29)
+                add('TreasureWrap', math.min(0.75, lane.treasure / 0.5), 34)
             end
         end
         for _, ball in ipairs(lane.balls) do
@@ -161,7 +237,15 @@ function F.Draw(board, run, active, clock)
                     end
                     item[j + 1]:SetTexture(A.media .. state.name .. '.tga')
                     item[j + 1]:SetBlendMode('BLEND')
-                    draw(item[j + 1], x, y, state.size, { 1, 1, 1 }, state.alpha, state.rotation)
+                    draw(
+                        item[j + 1],
+                        x,
+                        y,
+                        state.size,
+                        state.color or { 1, 1, 1 },
+                        state.alpha,
+                        state.rotation
+                    )
                 end
             end
         end

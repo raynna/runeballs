@@ -1,11 +1,12 @@
 """Generate code-native outlined special marbles and matching effect sprites."""
 from pathlib import Path
-import math
-from PIL import Image, ImageDraw, ImageFilter
+import math, argparse
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 ROOT=Path(__file__).resolve().parents[1]
 OUT=ROOT/'RaynnaRuneballs/Media'
 COLORS=[(240,35,48),(30,115,250),(45,210,45),(255,200,25),(175,45,245),(224,231,244)]
 KINDS=['Lightning','Paint','Stasis','Magnet','Treasure','Ward']
+parser=argparse.ArgumentParser();parser.add_argument('--kind',choices=KINDS);args=parser.parse_args()
 def glyph(kind):
  im=Image.new('RGBA',(256,256));d=ImageDraw.Draw(im);white=(255,255,245,255)
  if kind=='Lightning':d.polygon([(143,53),(75,140),(118,140),(102,203),(183,108),(139,108)],fill=white)
@@ -20,14 +21,13 @@ def glyph(kind):
   d.rectangle((70,68,96,139),fill=white);d.rectangle((160,68,186,139),fill=white)
   d.line((68,100,99,100),fill=(20,20,30),width=8);d.line((157,100,189,100),fill=(20,20,30),width=8)
  elif kind=='Treasure':
-  d.rounded_rectangle((67,83,189,184),radius=12,outline=white,width=12)
-  d.line((70,119,186,119),fill=white,width=10);d.rectangle((117,110,139,143),fill=white)
-  d.line((94,87,94,178),fill=white,width=7);d.line((162,87,162,178),fill=white,width=7)
+  font=ImageFont.truetype(str(OUT/'Fonts/LilitaOne.ttf'),116)
+  d.text((128,132),'×2',font=font,anchor='mm',fill=(255,208,58,255),stroke_width=5,stroke_fill=(70,35,8,255))
  elif kind=='Ward':
   d.polygon([(128,56),(188,82),(179,146),(155,177),(128,202),(101,177),(77,146),(68,82)],fill=white)
   d.polygon([(128,78),(167,96),(161,137),(145,161),(128,179)],fill=(24,26,36,255))
  return im
-for kind in KINDS:
+for kind in ([args.kind] if args.kind else KINDS):
  g=glyph(kind)
  for n,base in enumerate(COLORS,1):
   im=Image.new('RGBA',(256,256));pixels=im.load()
@@ -44,12 +44,12 @@ for kind in KINDS:
     pixels[x,y]=c+(255,)
   outline=Image.new('RGBA',im.size,(15,17,24,0));outline.putalpha(g.getchannel('A').filter(ImageFilter.MaxFilter(11)))
   im.alpha_composite(outline);im.alpha_composite(g)
-  im.resize((32,32),Image.Resampling.LANCZOS).save(OUT/f'{kind}{n}.tga')
+  im.resize((128,128) if kind=='Treasure' else (32,32),Image.Resampling.LANCZOS).save(OUT/f'{kind}{n}.tga')
  g.resize((64,64),Image.Resampling.LANCZOS).save(OUT/f'Effect{kind}.tga')
 arc=Image.new('RGBA',(512,128));d=ImageDraw.Draw(arc)
 points=[(0,64),(75,48),(137,91),(201,37),(269,82),(333,42),(397,76),(465,53),(511,64)]
 d.line(points,fill=(20,23,32,255),width=18,joint='curve');d.line(points,fill=(255,255,245,255),width=9,joint='curve')
-arc.resize((256,64),Image.Resampling.LANCZOS).save(OUT/'LightningArc.tga')
+if not args.kind:arc.resize((256,64),Image.Resampling.LANCZOS).save(OUT/'LightningArc.tga')
 # Large contact sheet for asset review; runtime assets remain 32px.
 sheet=Image.new('RGB',(600,6*94),(28,24,32));d=ImageDraw.Draw(sheet)
 for row,kind in enumerate(KINDS):

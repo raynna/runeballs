@@ -161,11 +161,14 @@ def preview(faction,scene):
  for index,(x,y) in enumerate(scene.get('marbles',[])):
   if scene.get('buff') and scene['buff']!='EffectStasis':
    x+=132;y=155+y*.86;buff=scene['buff'];remaining=scene.get('buffTime',4)
-   name={'Rewind':'RewindWrap','EffectStasis':'TimeChains','EffectMagnet':'MagnetWrap','EffectTreasure':'TreasureWrap'}.get(buff,buff)
+   name={'Rewind':'RewindWrap','EffectStasis':'TimeChains','EffectMagnet':'MatchRing','EffectTreasure':'TreasureWrap'}.get(buff,buff)
    alpha=1;size=31
-   if buff=='Frost':name='IceShell'+str(max(1,min(6,math.ceil(remaining*1.5))));alpha=min(1,remaining/.35)
+   if buff=='Frost':name='IceShell'+str(max(1,min(6,math.ceil(remaining*1.5))));alpha=min(.85,remaining/.35);size=35
    if name=='TimeChains':release=max(0,1-remaining/.45);alpha=1-release;size=29+release*9
-   tinted(name,x,y,size,size,(1,1,1),alpha)
+   if buff=='EffectMagnet':alpha=.4;size=34
+   if buff=='EffectTreasure':alpha=.75;size=34
+   if buff=='Rewind':alpha=.8;size=35
+   tinted(name,x,y,size,size,(.4,.85,1) if buff=='EffectMagnet' else (1,1,1),alpha)
  if scene.get('buff')=='EffectStasis' and scene.get('marbles'):
   path=scene['path'];ends=[min(range(len(path)),key=lambda i:math.dist(path[i],pos)) for pos in [scene['marbles'][0],scene['marbles'][-1]]]
   carry=0;release=max(0,1-scene.get('buffTime',3)/.45)
@@ -173,9 +176,22 @@ def preview(faction,scene):
    length=math.dist(a,b)
    while carry<=length:
     f=carry/length if length else 0;x=a[0]+(b[0]-a[0])*f;y=a[1]+(b[1]-a[1])*f
-    tinted('TimeChainLink',132+x,155+y*.86,18,13+release*5,(1,1,1),1-release,angle=-math.degrees(math.atan2((b[1]-a[1])*.86,b[0]-a[0])))
+    dx=b[0]-a[0];dy=(b[1]-a[1])*.86;l=max(.001,math.hypot(dx,dy))
+    tinted('TimeChainLink',132+x-dy/l*17,155+y*.86+dx/l*17,20,15+release*5,(1,1,1),1-release,angle=-math.degrees(math.atan2(dy,dx)))
     carry+=12
    carry-=length
+  a,b=path[max(0,max(ends)-1)],path[max(ends)];dx=b[0]-a[0];dy=(b[1]-a[1])*.86;l=max(.001,math.hypot(dx,dy))
+  tinted('EffectStasis',132+b[0]-dy/l*29,155+b[1]*.86+dx/l*29,19,19,(.9,.78,1),1-release)
+ for path in scene.get('pullPaths',[]):
+  distances=[0]
+  for a,b in zip(path,path[1:]):distances.append(distances[-1]+math.dist(a,b))
+  total=distances[-1]
+  def sample(d):
+   d=max(0,min(total,d));i=next((i for i in range(1,len(path)) if distances[i]>=d),len(path)-1);f=(d-distances[i-1])/max(.001,distances[i]-distances[i-1]);return [a+(b-a)*f for a,b in zip(path[i-1],path[i])]
+  for j in range(1,4):
+   phase=(scene.get('pullTime',0)*85/total+j/3)%1;distance=total*(1-phase);x,y=sample(distance);tx,ty=sample(distance-4);alpha=.45+math.sin(phase*math.pi)*.5
+   tinted('ImpactLight',132+x,155+y*.86,23,23,(.25,.8,1),alpha*.28,True)
+   tinted('MagnetPull',132+x,155+y*.86,17,17,(.45,.9,1),alpha,True,angle=-math.degrees(math.atan2((ty-y)*.86,tx-x)))
  if scene.get('combo'):
   cx,cy=scene['combo']['point']
   text('COMBO! x'+str(scene['combo']['count']),132+cx,155+cy*.86-46,24,True)

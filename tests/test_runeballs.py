@@ -1189,3 +1189,21 @@ assert(calls.Lightning==1 and calls.Bomb==1 and calls.Stasis==1 and calls.Magnet
 assert(r.stasis==3 and r.magnet==6 and r.bombImpact and r.lightningImpact,'both powers and their blast visuals survive')
 """)
 print('PASS: lightning activates all ten caught special types and bomb cascades trigger multiple powers once')
+
+
+lua=runtime()
+lua.execute("""
+A.events.OnEvent(A.events,'ADDON_LOADED','RaynnaRuneballs');A.events.OnEvent(A.events,'PLAYER_LOGIN');A.Open(false)
+local r=A.db.run;r.paused=false;r.balls={{d=500,color=1},{d=300,color=2}};r.magnet=6
+local point,hidden=A.Engine.Point,A.Engine.Hidden;A.Engine.Point=function(_,d)return d,100 end;A.Engine.Hidden=function()return false end
+A.Feedback.Draw(A.board,r,{},0);local p=A.Feedback.pulls[1][1];local x=p.pointArgs[3];assert(p:IsShown())
+A.Feedback.Draw(A.board,r,{},.1);assert(p.pointArgs[3]<x,'gap arrows move toward rear group')
+local count=#Frames;A.Feedback.Draw(A.board,r,{},.15);assert(#Frames==count)
+A.db.options.reducedMotion=true;A.Feedback.Draw(A.board,r,{},1);x=p.pointArgs[3];A.Feedback.Draw(A.board,r,{},2);assert(p.pointArgs[3]==x)
+r.stasis=3;A.Feedback.Draw(A.board,r,{},3);assert(not p:IsShown(),'stasis suppresses misleading pull')
+local chain=A.Feedback.chains[1][1];assert(math.abs(chain.pointArgs[4]+86)>15,'chain clears ball centres')
+assert(A.Feedback.stops[1][1]:IsShown(),'time stop has one endpoint marker')
+r.stasis=0;A.Engine.Hidden=function()return true end;A.Feedback.Draw(A.board,r,{},4);assert(not p:IsShown())
+A.Engine.Hidden=hidden;A.Engine.Point=point;r.magnet=0;A.Draw();assert(not p:IsShown())
+""")
+print('PASS: directional Magnet pulls, stationary reduced motion, tunnel protection, colour clearance and stop marker')
