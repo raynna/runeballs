@@ -1,8 +1,9 @@
 ## Interface: 16001
+## IconTexture: Interface\AddOns\RaynnaRuneballs\AddonIcon
 ## Title: Raynna's Runeballs
 ## Notes: Match coloured runeballs before the chain reaches the void. Play anywhere or on flights.
 ## Author: Andreas
-## Version: 0.5.32
+## Version: 0.5.33
 ## SavedVariablesPerCharacter: RaynnaRuneballsDB
 SettingsRegistry.lua
 GameRegistry.lua

@@ -1,5 +1,10 @@
 # 0.5.32
 
+## 0.5.33
+
+- Added the Runeballs icon to the in-game addon list.
+
+
 Clearer Magnet, Treasure and Time Stop feedback.
 
 - Magnet now sends glowing cyan arrows through open gaps toward the rear group, following the road. Static arrows are used with reduced motion. Tunnel-hidden sections stay hidden, and pulling cues stop while Stasis or Rewind overrides Magnet.
